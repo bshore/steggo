@@ -9,6 +9,13 @@ import (
 	"path/filepath"
 )
 
+/*
+	Notes to self:
+	Maybe first writable byte is len(src)/4, take the guess work out of where the header ends
+	Maybe actually read into the golang pkg/image to avoid reinventing the wheel
+	https://golang.org/pkg/image/
+*/
+
 var (
 	srcFile = flag.String("srcfile", "", "Path to the source file to be messed with")
 	outFile = flag.String("outfile", "", "Path to the output directory when finished")
@@ -41,6 +48,7 @@ func init() {
 
 func parseFlags() (*process.Flags, []error) {
 	flag.Parse()
+	var msgFilePath string
 	var errs []error
 	srcFilePath, err := filepath.Abs(*srcFile)
 	if err != nil {
@@ -50,9 +58,11 @@ func parseFlags() (*process.Flags, []error) {
 	if err != nil {
 		errs = append(errs, err)
 	}
-	msgFilePath, err := filepath.Abs(*msgFile)
-	if err != nil {
-		errs = append(errs, err)
+	if *msgFile != "" {
+		msgFilePath, err = filepath.Abs(*msgFile)
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
 	// If attempting to encode without a source message
 	if !*decode && (msgFilePath == "") && (*text == "") {
@@ -88,5 +98,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// Call encode
+	err = process.EncodeSrcFile(encodeConfig)
+	if err != nil {
+		panic(err)
+	}
 }

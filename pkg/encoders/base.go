@@ -42,6 +42,18 @@ func EncTypeFromString(s string) (EncType, error) {
 
 // ApplyPreEncoding encodes the message with each type of encoding passed through cli
 func ApplyPreEncoding(msg string, encs []EncType) string {
-	// Apply the pre encoding junk
-	return ""
+	for _, enc := range encs {
+		if enc == R13 {
+			msg = Rot13(msg)
+		} else if enc == B16 {
+			msg = Encode16(msg)
+		} else if enc == B32 {
+			msg = Encode32(msg)
+		} else if enc == B64 {
+			msg = Encode64(msg)
+		} else if enc == B85 {
+			msg = Encode85(msg)
+		}
+	}
+	return msg
 }

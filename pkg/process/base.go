@@ -22,7 +22,7 @@ type Flags struct {
 }
 
 // ToEncConf takes Flags info and turns it into a config struct for Encoding
-func (f Flags) ToEncConf() (*EncodeConfig, error) {
+func (f Flags) ToEncConf() (EncodeConfig, error) {
 	var e EncodeConfig
 	var p []encoders.EncType
 	if f.Stdin {
@@ -39,7 +39,7 @@ func (f Flags) ToEncConf() (*EncodeConfig, error) {
 		for _, typ := range typs {
 			enc, err := encoders.EncTypeFromString(typ)
 			if err != nil {
-				return nil, err
+				return EncodeConfig{}, err
 			}
 			p = append(p, enc)
 		}
@@ -60,11 +60,10 @@ func (f Flags) ToEncConf() (*EncodeConfig, error) {
 			p = append(p, encoders.B85)
 		}
 	}
-	return &EncodeConfig{
-		Src:    f.SrcFile,
-		Out:    f.OutputFile,
-		PreEnc: p,
-	}, nil
+	e.Src = f.SrcFile
+	e.Out = f.OutputFile
+	e.PreEnc = p
+	return e, nil
 }
 
 // EncodeConfig stores config options for handling Encoding
@@ -74,4 +73,11 @@ type EncodeConfig struct {
 	MsgSrc string
 	Msg    string
 	PreEnc []encoders.EncType
+}
+
+// DecodeConfig stores config options for handling Decoding
+type DecodeConfig struct {
+	Src     string
+	Out     string
+	PostDec []encoders.EncType
 }
