@@ -7,7 +7,7 @@ Maybe you just want to look at how much time someone can waste on something nobo
 Or maybe you're building a Cyber Capture The Flag event for a hacker convention? (like me)
 
 # Least Significant Bit(s) Stenography
-Basically, take a secret message... "Hello Secret World!" for example:
+Basically, take a secret message... "Hello Secret World!" for example and convert it to binary:
 ```
 01001000 01100101 01101100 01101100 01101111 // Hello
 00100000 // Space
