@@ -15,7 +15,7 @@ Basically, take a secret message... "Hello Secret World!" for example and conver
 00100000 // Space
 01010111 01101111 01110010 01101100 01100100 00100001 // World!
 ```
->Break apart the message into n bits (usually 1 or 2) and hide them inside an image/video/audio file using the **Least Significant Bit(s)**
+>Break apart the message into n bits (usually 1 or 2) and hide them inside an image/video/audio file using the **Least Significant Bit(s)** (this is basically how it works, I'm not going to dive into it in a README)
 
 | LSB      | Encoded Character | LSB      | Encoded Character | LSB      | Encoded Character |
 |----------|:-----------------:|----------|:-----------------:|----------|:-----------------:|
@@ -29,3 +29,5 @@ Basically, take a secret message... "Hello Secret World!" for example and conver
 |101001`11`|                   |101101`11`|                   |101101`00`|                   |
 |100101`00`|                   |101010`11`|                   |010101`00`|                   |
 |||||||
+
+>Just do that until the message to encode runs out
