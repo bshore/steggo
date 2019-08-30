@@ -3,7 +3,9 @@ A Least Significant Bit(s) Stenography encoder
 
 # Why?
 Maybe you want to send secret messages to a friend through images?
+
 Maybe you just want to look at how much time someone can waste on something nobody really needs?
+
 Or maybe you're building a Cyber Capture The Flag event for a hacker convention? (like me)
 
 # Least Significant Bit(s) Stenography
