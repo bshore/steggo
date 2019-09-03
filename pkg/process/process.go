@@ -2,16 +2,20 @@ package process
 
 import (
 	"fmt"
+	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"io/ioutil"
 	"lsb_encoder/pkg/encoders"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 // EncodeSrcFile does...
 func EncodeSrcFile(conf EncodeConfig) error {
 	var msg string
+	var loadedImage image.Image
 	if conf.MsgSrc == "stdin" {
 		// Pull the message from Stdin
 		bytes, err := ioutil.ReadAll(os.Stdin)
@@ -35,19 +39,76 @@ func EncodeSrcFile(conf EncodeConfig) error {
 		conf.Msg = encoders.ApplyPreEncoding(msg, conf.PreEnc)
 	}
 	// Read the Source file
-	source, err := ioutil.ReadFile(conf.Src)
+	sourceFile, err := os.Open(conf.Src)
+	// source, err := ioutil.ReadFile(conf.Src)
 	if err != nil {
 		return fmt.Errorf("Error reading Source file: (%v)", err)
 	}
-	split := strings.Split(filepath.Base(conf.Src), ".")
-	ext := split[len(split)-1]
-	embedded, err := EmbedMsgInFile(conf.Msg, ext, source)
+	defer sourceFile.Close()
+	// reader = base64.NewDecoder(base64.StdEncoding, reader.(io.Reader))
+	_, format, err := image.Decode(sourceFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error decoding source file: (%v)", err)
 	}
-	err = WriteEmbeddedFile(embedded, conf.Out, ext)
-	if err != nil {
-		return err
+	// Reset the file's reader to beginning
+	sourceFile.Seek(0, 0)
+	if format == "png" {
+		loadedImage, err = png.Decode(sourceFile)
+		if err != nil {
+			return fmt.Errorf("Error decoding PNG file: (%v)", err)
+		}
+		embedded, err := EmbedMsgInImage(conf.Msg, format, loadedImage)
+		if err != nil {
+			return fmt.Errorf("Error embedding message in file: (%v)", err)
+		}
+		newFile, err := os.Create(filepath.Join(conf.Out, "output."+format))
+		if err != nil {
+			return fmt.Errorf("Error creating output file: (%v)", err)
+		}
+		defer newFile.Close()
+		err = png.Encode(newFile, embedded)
+		if err != nil {
+			return fmt.Errorf("Error encoding new PNG image: (%v)", err)
+		}
+		return nil
+	} else if format == "jpeg" {
+		loadedImage, err = jpeg.Decode(sourceFile)
+		if err != nil {
+			return fmt.Errorf("Error decoding JPEG file: (%v)", err)
+		}
+		embedded, err := EmbedMsgInImage(conf.Msg, format, loadedImage)
+		if err != nil {
+			return fmt.Errorf("Error embedding message in file: (%v)", err)
+		}
+		newFile, err := os.Create(filepath.Join(conf.Out, "output."+format))
+		if err != nil {
+			return fmt.Errorf("Error creating output file: (%v)", err)
+		}
+		defer newFile.Close()
+		err = jpeg.Encode(newFile, embedded, &jpeg.Options{Quality: 100})
+		if err != nil {
+			return fmt.Errorf("Error encoding new JPEG image: (%v)", err)
+		}
+		return nil
+	} else if format == "gif" {
+		loadedGIF, err := gif.DecodeAll(sourceFile)
+		if err != nil {
+			return fmt.Errorf("Error decoding GIF file: (%v)", err)
+		}
+		embedded, err := EmbedMsgInGIF(conf.Msg, format, loadedGIF)
+		if err != nil {
+			return fmt.Errorf("Error embedding message in file: (%v)", err)
+		}
+		newFile, err := os.Create(filepath.Join(conf.Out, "output."+format))
+		if err != nil {
+			return fmt.Errorf("Error creating output file: (%v)", err)
+		}
+		defer newFile.Close()
+		err = gif.Encode(newFile, embedded, &gif.Options{})
+	} else if format == "bmp" {
+		// Do something else?
+	} else {
+		// ?
 	}
 	return nil
 }

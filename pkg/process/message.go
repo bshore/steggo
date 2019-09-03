@@ -1,4 +1,4 @@
-package magic
+package process
 
 import (
 	"strconv"
@@ -22,24 +22,16 @@ func ZeroPadLeft(str string) string {
 // BreakupMessageBytes busts apart each message byte into
 // string arrays of two for swapping Least Significant Bits
 // of the image file's writable bytes
-func BreakupMessageBytes(msg string) [][]string {
+func BreakupMessageBytes(msg string) []string {
 	msgBytes := []byte(msg)
-	var bitArr [][]string
+	var bitArr []string
 	for _, b := range msgBytes {
 		// Kinda dumb, I'm sure there's a better way to
 		// get a binary representation of a byte...
 		binStr := strconv.FormatInt(int64(b), 2)
 		bits := strings.Split(ZeroPadLeft(binStr), "")
-		for i, bit := range bits {
-			// Current iteration is odd (1, 3, 5, 7)
-			// Grab bits in pairs(01,23,45,67)
-			if i%2 != 0 && i != 0 {
-				// 00000010 two bit set?
-				two := bit
-				// 00000001 one bit set?
-				one := bits[i-1]
-				bitArr = append(bitArr, []string{two, one})
-			}
+		for _, bit := range bits {
+			bitArr = append(bitArr, bit)
 		}
 	}
 	return bitArr
