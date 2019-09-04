@@ -8,12 +8,12 @@ import (
 // ZeroPadLeft left pads a string with zeros until the string is
 // 8 characters long
 func ZeroPadLeft(str string) string {
-	if len(str) == 8 {
+	if len(str) == 16 {
 		return str
 	}
 	for {
 		str = "0" + str
-		if len(str) == 8 {
+		if len(str) == 16 {
 			return str
 		}
 	}
