@@ -19,7 +19,7 @@ const (
 )
 
 var encMap = map[int]string{
-	0: "rot13",
+	0: "r13",
 	1: "b16",
 	2: "b32",
 	3: "b64",

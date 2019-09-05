@@ -18,7 +18,7 @@ import (
 
 var (
 	srcFile = flag.String("srcfile", "", "Path to the source file to be messed with")
-	outFile = flag.String("outfile", "", "Path to the output directory when finished")
+	outDir  = flag.String("outdir", "", "Path to the output directory when finished")
 	text    = flag.String("text", "", "The text string to encode into the file")
 	stdIn   = flag.Bool("stdin", false, "T/F flag if passing through concat file and pipe | ")
 	msgFile = flag.String("msgfile", "", "The path to a text file containing the message to be endcoded")
@@ -33,7 +33,7 @@ var (
 
 func init() {
 	flag.StringVar(srcFile, "s", "", "Path to the source file to be messed with")
-	flag.StringVar(outFile, "o", "", "Path to the output directory when finished")
+	flag.StringVar(outDir, "o", "", "Path to the output directory when finished")
 	flag.StringVar(text, "t", "", "The text string to encode into the file")
 	flag.BoolVar(stdIn, "i", false, "T/F flag if passing through concat file and pipe | ")
 	flag.StringVar(msgFile, "m", "", "The path to a text file containing the message to be encoded")
@@ -54,7 +54,7 @@ func parseFlags() (*process.Flags, []error) {
 	if err != nil {
 		errs = append(errs, err)
 	}
-	outFilePath, err := filepath.Abs(*outFile)
+	outFilePath, err := filepath.Abs(*outDir)
 	if err != nil {
 		errs = append(errs, err)
 	}
