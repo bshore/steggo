@@ -23,17 +23,20 @@ func EncodeSrcFile(conf EncodeConfig) error {
 			return fmt.Errorf("Error reading from Stdin: (%v)", err)
 		}
 		msg = string(bytes)
-	} else if conf.MsgSrc != "text" {
+	} else if conf.MsgSrc != "text" && conf.MsgSrc != "" {
 		// Read the message from the filepath
 		bytes, err := ioutil.ReadFile(conf.MsgSrc)
 		if err != nil {
 			return fmt.Errorf("Error reading Message input file: (%v)", err)
 		}
 		msg = string(bytes)
-	} else {
+	} else if conf.MsgSrc == "text" {
 		// Accept the message passed via flag
 		msg = conf.Msg
+	} else {
+		return fmt.Errorf("Error determining MsgSrc: %v", conf.MsgSrc)
 	}
+	conf.Msg = msg
 	// Apply any Pre Encoding to the secret message
 	if len(conf.PreEnc) != 0 {
 		conf.Msg = encoders.ApplyPreEncoding(msg, conf.PreEnc)
@@ -104,7 +107,7 @@ func EncodeSrcFile(conf EncodeConfig) error {
 			return fmt.Errorf("Error creating output file: (%v)", err)
 		}
 		defer newFile.Close()
-		err = gif.Encode(newFile, embedded, &gif.Options{})
+		gif.EncodeAll(newFile, embedded)
 	} else if format == "bmp" {
 		// Do something else?
 	} else {

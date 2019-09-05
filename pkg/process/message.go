@@ -7,13 +7,13 @@ import (
 
 // ZeroPadLeft left pads a string with zeros until the string is
 // 8 characters long
-func ZeroPadLeft(str string) string {
-	if len(str) == 16 {
+func ZeroPadLeft(str string, length int) string {
+	if len(str) == length {
 		return str
 	}
 	for {
 		str = "0" + str
-		if len(str) == 16 {
+		if len(str) == length {
 			return str
 		}
 	}
@@ -29,7 +29,7 @@ func BreakupMessageBytes(msg string) [][]string {
 		// Kinda dumb, I'm sure there's a better way to
 		// get a binary representation of a byte...
 		binStr := strconv.FormatInt(int64(b), 2)
-		bits := strings.Split(ZeroPadLeft(binStr), "")
+		bits := strings.Split(ZeroPadLeft(binStr, 8), "")
 		for i, bit := range bits {
 			// Current iteration is odd ?
 			// Grab bits in pairs (01, 23, 45, 67)
