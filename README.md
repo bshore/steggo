@@ -38,7 +38,10 @@ To run use this command:
 
   # Example commands
   # Simple
-  go run ./cmd/lsb_encoder/ --srcfile ~/Desktop/Pics/kitty_cat.jpeg --outdir ~/Desktop/Pics -base64 --text "Kitty Cat"
+  go run ./cmd/lsb_encoder/ \
+    --srcfile ~/Desktop/Pics/kitty_cat.jpeg \
+    --outdir ~/Desktop/Pics -base64 \
+    --text "Kitty Cat"
 
   go run ./cmd/lsb_encoder/ --decode --b64 \
     -s ~/Desktop/Pics/output.jpeg \
