@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/color/palette"
 	"image/draw"
 	"image/gif"
 	"strconv"
@@ -98,9 +99,9 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 		Config:          file.Config,
 		BackgroundIndex: file.BackgroundIndex,
 	}
+	colorPalette := palette.WebSafe
 	// For each image frame
 	for i, img := range file.Image {
-		colorPalette := getGIFColorPallete(img)
 		fmt.Printf("On frame %v of %v\n", i, len(file.Image))
 		bounds := img.Bounds()
 		newFrame := image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), colorPalette)
@@ -128,15 +129,15 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 								return nil, err
 							}
 							// Check if there is a next bit to embed
-							if bitsIndex+3 < bitMax {
-								newA, err = embedIn8BitColor(bitArr[bitsIndex+3], uint8(a))
-								if err != nil {
-									return nil, err
-								}
-							} else {
-								// No more message bits to embed, copy color value
-								newA = uint8(a)
-							}
+							// if bitsIndex+3 < bitMax {
+							// 	newA, err = embedIn8BitColor(bitArr[bitsIndex+3], uint8(a))
+							// 	if err != nil {
+							// 		return nil, err
+							// 	}
+							// } else {
+							// 	// No more message bits to embed, copy color value
+							// 	newA = uint8(a)
+							// }
 						} else {
 							// No more message bits to embed, copy color value
 							newB = uint8(b)
@@ -149,10 +150,10 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 						R: newR,
 						G: newG,
 						B: newB,
-						A: newA,
+						A: uint8(a),
 					}
 					newFrame.Set(x, y, newColor)
-					bitsIndex = bitsIndex + 4
+					bitsIndex = bitsIndex + 3
 				} else {
 					// No more message bits to embed, just copy the remaining pixels for frame
 					newR = uint8(r)
@@ -217,15 +218,4 @@ func embedIn16BitColor(a []string, b uint32) (uint16, error) {
 	}
 
 	return uint16(newColor), nil
-}
-
-func getGIFColorPallete(img *image.Paletted) color.Palette {
-	var colors color.Palette
-	bounds := img.Bounds()
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			colors = append(colors, img.At(x, y))
-		}
-	}
-	return colors
 }

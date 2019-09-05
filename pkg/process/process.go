@@ -107,7 +107,10 @@ func EncodeSrcFile(conf EncodeConfig) error {
 			return fmt.Errorf("Error creating output file: (%v)", err)
 		}
 		defer newFile.Close()
-		gif.EncodeAll(newFile, embedded)
+		err = gif.EncodeAll(newFile, embedded)
+		if err != nil {
+			return err
+		}
 	} else if format == "bmp" {
 		// Do something else?
 	} else {
