@@ -59,8 +59,9 @@ func EncodeSrcFile(conf EncodeConfig) error {
 	sourceFile.Seek(0, 0)
 
 	// Do all the work, can totally be cleaned up & refactored
-	// Maybe format becomes an iota enum so this can be a type switch vs if, else if, etc...
-	// and each format type has Decode, Embed, and Encode methods?
+	// Maybe format becomes an iota enum so this can be a
+	// type switch instead of a big if, else if, else block
+	// and each format type has Decode, Embed, and Encode methods
 	// Is that cleaner?
 	if format == "png" {
 		loadedImage, err = png.Decode(sourceFile)

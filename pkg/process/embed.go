@@ -129,15 +129,15 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 								return nil, err
 							}
 							// Check if there is a next bit to embed
-							// if bitsIndex+3 < bitMax {
-							// 	newA, err = embedIn8BitColor(bitArr[bitsIndex+3], uint8(a))
-							// 	if err != nil {
-							// 		return nil, err
-							// 	}
-							// } else {
-							// 	// No more message bits to embed, copy color value
-							// 	newA = uint8(a)
-							// }
+							if bitsIndex+3 < bitMax {
+								newA, err = embedIn8BitColor(bitArr[bitsIndex+3], uint8(a))
+								if err != nil {
+									return nil, err
+								}
+							} else {
+								// No more message bits to embed, copy color value
+								newA = uint8(a)
+							}
 						} else {
 							// No more message bits to embed, copy color value
 							newB = uint8(b)
@@ -150,7 +150,7 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 						R: newR,
 						G: newG,
 						B: newB,
-						A: uint8(a),
+						A: newA,
 					}
 					newFrame.Set(x, y, newColor)
 					bitsIndex = bitsIndex + 3
