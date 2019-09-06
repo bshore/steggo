@@ -105,6 +105,8 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 		fmt.Printf("On frame %v of %v\n", i, len(file.Image))
 		bounds := img.Bounds()
 		newFrame := image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), colorPalette)
+		// Copy source image frame's local color palette into new frame
+		newFrame.Palette = img.Palette
 		// For each vertical row
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			// For each pixel in each row
