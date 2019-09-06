@@ -36,7 +36,7 @@ func Rot13(input string) string {
 // Encode16 takes a message and hex encodes it
 func Encode16(msg string) string {
 	b := []byte(msg)
-	encoded := make([]byte, len(b))
+	encoded := make([]byte, hex.EncodedLen(len(b)))
 	_ = hex.Encode(encoded, b)
 	return string(encoded)
 }

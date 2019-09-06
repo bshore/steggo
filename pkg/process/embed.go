@@ -153,7 +153,7 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 						A: newA,
 					}
 					newFrame.Set(x, y, newColor)
-					bitsIndex = bitsIndex + 3
+					bitsIndex = bitsIndex + 4
 				} else {
 					// No more message bits to embed, just copy the remaining pixels for frame
 					newR = uint8(r)
