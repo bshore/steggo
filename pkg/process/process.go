@@ -10,6 +10,8 @@ import (
 	"lsb_encoder/pkg/encoders"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/image/bmp"
 )
 
 // EncodeSrcFile does...
@@ -55,6 +57,11 @@ func EncodeSrcFile(conf EncodeConfig) error {
 	}
 	// Reset the file's reader to beginning
 	sourceFile.Seek(0, 0)
+
+	// Do all the work, can totally be cleaned up & refactored
+	// Maybe format becomes an iota enum so this can be a type switch vs if, else if, etc...
+	// and each format type has Decode, Embed, and Encode methods?
+	// Is that cleaner?
 	if format == "png" {
 		loadedImage, err = png.Decode(sourceFile)
 		if err != nil {
@@ -112,9 +119,26 @@ func EncodeSrcFile(conf EncodeConfig) error {
 			return err
 		}
 	} else if format == "bmp" {
-		// Do something else?
+		loadedImage, err := bmp.Decode(sourceFile)
+		if err != nil {
+			return fmt.Errorf("Error decoding BMP file: (%v)", err)
+		}
+		embedded, err := EmbedMsgInImage(conf.Msg, format, loadedImage)
+		if err != nil {
+			return fmt.Errorf("Error embedding message in file: (%v)", err)
+		}
+		newFile, err := os.Create(filepath.Join(conf.Out, "output."+format))
+		if err != nil {
+			return fmt.Errorf("Error creating output file: (%v)", err)
+		}
+		defer newFile.Close()
+		err = bmp.Encode(newFile, embedded)
+		if err != nil {
+			return fmt.Errorf("Error encoding new JPEG image: (%v)", err)
+		}
+		return nil
 	} else {
-		// ?
+		return fmt.Errorf("Unrecognized file format: %v", format)
 	}
 	return nil
 }
