@@ -8,9 +8,9 @@ Visit the [Golang](https://golang.org/dl/) downloads page and download the insta
 system.
 
 Follow the install instructions for your operating system
-[Linux](https://golang.org/doc/install#tarball)
-[Windows](https://golang.org/doc/install#windows)
-[MacOS](https://golang.org/doc/install#macos)
+* [Linux](https://golang.org/doc/install#tarball)
+* [Windows](https://golang.org/doc/install#windows)
+* [MacOS](https://golang.org/doc/install#macos)
 
 Clone or download the ZIP of this repository, and place it in your go workspace.
 `C:\Go\src` for Windows (by default)
