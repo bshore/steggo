@@ -20,7 +20,7 @@ Clone or download the ZIP of this repository, and place it in your go workspace.
 If on Windows, use `\` instead of `/` for file paths.
 
 To run use this command:
-`go run ./cmd/lsb_encoder/` or `go run .\cmd\lsb_encoder\`
+`go run ./cmd/lsb_encoder/`
 #### Flag Options
 ```sh
   - s # or --srcfile /path/to/input/source.png (.gif or .jpeg)
