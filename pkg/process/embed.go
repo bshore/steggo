@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/color/palette"
 	"image/draw"
 	"image/gif"
 	"strconv"
@@ -12,14 +11,16 @@ import (
 )
 
 // EmbedMsgInImage takes the message string and embeds it
-// in the source file's byte string using Least Significant Bit
-func EmbedMsgInImage(msg, format string, file image.Image) (draw.Image, error) {
+// in the source file's byte string using Least Significant Bit(s)
+func EmbedMsgInImage(secret *Secret, file image.Image) (draw.Image, error) {
 	var bitsIndex int
 	var err error
 	var newR, newG, newB, newA uint16
-	bitArr := BreakupMessageBytes(msg)
-	bitMax := len(bitArr) - 1
 	bounds := file.Bounds()
+	pixels := bounds.Max.X * bounds.Max.Y
+	if !(secret.Size < pixels) {
+		return nil, fmt.Errorf("Secret message won't fit in image: %v LSB's to embed, %v pixels available", secret.Size, pixels)
+	}
 	newFile := image.NewRGBA64(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
 	// For each vertical row
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
@@ -27,26 +28,26 @@ func EmbedMsgInImage(msg, format string, file image.Image) (draw.Image, error) {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, a := file.At(x, y).RGBA()
 			// If the iteration is still under the length of message bits
-			if bitsIndex < bitMax {
-				newR, err = embedIn16BitColor(bitArr[bitsIndex], r)
+			if bitsIndex < secret.Size {
+				newR, err = embedIn16BitColor(secret.Data[bitsIndex], r)
 				if err != nil {
 					return nil, err
 				}
-				// Check if there is a next bit to embed
-				if bitsIndex+1 < bitMax {
-					newG, err = embedIn16BitColor(bitArr[bitsIndex+1], g)
+				// Check if there is a next bit pair to embed
+				if bitsIndex+1 < secret.Size {
+					newG, err = embedIn16BitColor(secret.Data[bitsIndex+1], g)
 					if err != nil {
 						return nil, err
 					}
-					// Check if there is a next bit to embed
-					if bitsIndex+2 < bitMax {
-						newB, err = embedIn16BitColor(bitArr[bitsIndex+2], b)
+					// Check if there is a next bit pair to embed
+					if bitsIndex+2 < secret.Size {
+						newB, err = embedIn16BitColor(secret.Data[bitsIndex+2], b)
 						if err != nil {
 							return nil, err
 						}
-						// Check if there is a next bit to embed
-						if bitsIndex+3 < bitMax {
-							newA, err = embedIn16BitColor(bitArr[bitsIndex+3], a)
+						// Check if there is a next bit pair to embed
+						if bitsIndex+3 < secret.Size {
+							newA, err = embedIn16BitColor(secret.Data[bitsIndex+3], a)
 							if err != nil {
 								return nil, err
 							}
@@ -82,15 +83,21 @@ func EmbedMsgInImage(msg, format string, file image.Image) (draw.Image, error) {
 	return newFile, nil
 }
 
-// EmbedMsgInGIF takes the message string and embeds it into a GIF file frame by frame
-func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
+// EmbedMsgInGIF takes the message string and embeds it into a GIF file
+// frame by frame using Least Significant Bit(s)
+func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 	var bitsIndex int
 	var err error
 	var doneEmbedding bool
 	var newR, newG, newB, newA uint8
-	bitArr := BreakupMessageBytes(msg)
-	bitMax := len(bitArr) - 1
-	fmt.Println("Message bits to embed: ", bitMax)
+	bounds := file.Image[0].Bounds()
+	// Get Bounds of first frame. Since GIF's cannot change size/resolution
+	// this is a good way to estimate how many pixels we have available
+	// for embedding.
+	pixels := (bounds.Max.X * bounds.Max.Y) * len(file.Image)
+	if !(secret.Size < pixels) {
+		return nil, fmt.Errorf("Secret message won't fit in image: %v LSB's to embed, %v pixels available", secret.Size, pixels)
+	}
 	newGif := &gif.GIF{
 		Image:           []*image.Paletted{},
 		Delay:           file.Delay,
@@ -99,40 +106,36 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 		Config:          file.Config,
 		BackgroundIndex: file.BackgroundIndex,
 	}
-	colorPalette := palette.WebSafe
 	// For each image frame
 	for i, img := range file.Image {
-		fmt.Printf("On frame %v of %v\n", i, len(file.Image))
 		bounds := img.Bounds()
-		newFrame := image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), colorPalette)
-		// Copy source image frame's local color palette into new frame
-		newFrame.Palette = img.Palette
+		newFrame := image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), img.Palette)
 		// For each vertical row
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			// For each pixel in each row
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
 				r, g, b, a := img.At(x, y).RGBA()
 				// If the iteration is still under the length of message bits
-				if bitsIndex < bitMax {
-					newR, err = embedIn8BitColor(bitArr[bitsIndex], uint8(r))
+				if bitsIndex < secret.Size {
+					newR, err = embedIn8BitColor(secret.Data[bitsIndex], uint8(r))
 					if err != nil {
 						return nil, err
 					}
-					// Check if there is a next bit to embed
-					if bitsIndex+1 < bitMax {
-						newG, err = embedIn8BitColor(bitArr[bitsIndex+1], uint8(g))
+					// Check if there is a next bit pair to embed
+					if bitsIndex+1 < secret.Size {
+						newG, err = embedIn8BitColor(secret.Data[bitsIndex+1], uint8(g))
 						if err != nil {
 							return nil, err
 						}
-						// Check if there is a next bit to embed
-						if bitsIndex+2 < bitMax {
-							newB, err = embedIn8BitColor(bitArr[bitsIndex+2], uint8(b))
+						// Check if there is a next bit pair to embed
+						if bitsIndex+2 < secret.Size {
+							newB, err = embedIn8BitColor(secret.Data[bitsIndex+2], uint8(b))
 							if err != nil {
 								return nil, err
 							}
-							// Check if there is a next bit to embed
-							if bitsIndex+3 < bitMax {
-								newA, err = embedIn8BitColor(bitArr[bitsIndex+3], uint8(a))
+							// Check if there is a next bit pair to embed
+							if bitsIndex+3 < secret.Size {
+								newA, err = embedIn8BitColor(secret.Data[bitsIndex+3], uint8(a))
 								if err != nil {
 									return nil, err
 								}
@@ -169,10 +172,6 @@ func EmbedMsgInGIF(msg, format string, file *gif.GIF) (*gif.GIF, error) {
 						A: newA,
 					}
 					newFrame.Set(x, y, newColor)
-					bitsIndex = bitsIndex + 4
-					if !doneEmbedding {
-						fmt.Printf("Done embedding Frame %v at row Y: %v  col X: %v\n", i, y, x)
-					}
 					doneEmbedding = true
 				}
 			} // End x

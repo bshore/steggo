@@ -23,6 +23,7 @@ To run use this command:
 `go run ./cmd/lsb_encoder/`
 #### Flag Options
 ```sh
+  Flag Options:
   - s # or --srcfile /path/to/input/source.png (.gif, .bmp, or .jpeg)
   - o # or --outdir /path/to/output/ Directory to save output.png (.gif, .bmp, or .jpeg)
   - t # or --text "The Secret Message to embed"
