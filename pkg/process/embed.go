@@ -6,15 +6,12 @@ import (
 	"image/color"
 	"image/draw"
 	"image/gif"
-	"strconv"
-	"strings"
 )
 
 // EmbedMsgInImage takes the message string and embeds it
 // in the source file's byte string using Least Significant Bit(s)
 func EmbedMsgInImage(secret *Secret, file image.Image) (draw.Image, error) {
 	var bitsIndex int
-	var err error
 	var newR, newG, newB, newA uint16
 	bounds := file.Bounds()
 	pixels := bounds.Max.X * bounds.Max.Y
@@ -29,28 +26,16 @@ func EmbedMsgInImage(secret *Secret, file image.Image) (draw.Image, error) {
 			r, g, b, a := file.At(x, y).RGBA()
 			// If the iteration is still under the length of message bits
 			if bitsIndex < secret.Size {
-				newR, err = embedIn16BitColor(secret.Data[bitsIndex], r)
-				if err != nil {
-					return nil, err
-				}
+				newR = embedIn16BitColor(secret.Data[bitsIndex], r)
 				// Check if there is a next bit pair to embed
 				if bitsIndex+1 < secret.Size {
-					newG, err = embedIn16BitColor(secret.Data[bitsIndex+1], g)
-					if err != nil {
-						return nil, err
-					}
+					newG = embedIn16BitColor(secret.Data[bitsIndex+1], g)
 					// Check if there is a next bit pair to embed
 					if bitsIndex+2 < secret.Size {
-						newB, err = embedIn16BitColor(secret.Data[bitsIndex+2], b)
-						if err != nil {
-							return nil, err
-						}
+						newB = embedIn16BitColor(secret.Data[bitsIndex+2], b)
 						// Check if there is a next bit pair to embed
 						if bitsIndex+3 < secret.Size {
-							newA, err = embedIn16BitColor(secret.Data[bitsIndex+3], a)
-							if err != nil {
-								return nil, err
-							}
+							newA = embedIn16BitColor(secret.Data[bitsIndex+3], a)
 						} else {
 							// No more message bits to embed, copy color value
 							newA = uint16(a)
@@ -87,7 +72,6 @@ func EmbedMsgInImage(secret *Secret, file image.Image) (draw.Image, error) {
 // frame by frame using Least Significant Bit(s)
 func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 	var bitsIndex int
-	var err error
 	var doneEmbedding bool
 	var newR, newG, newB, newA uint8
 	bounds := file.Image[0].Bounds()
@@ -117,28 +101,16 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 				r, g, b, a := img.At(x, y).RGBA()
 				// If the iteration is still under the length of message bits
 				if bitsIndex < secret.Size {
-					newR, err = embedIn8BitColor(secret.Data[bitsIndex], uint8(r))
-					if err != nil {
-						return nil, err
-					}
+					newR = embedIn8BitColor(secret.Data[bitsIndex], uint8(r))
 					// Check if there is a next bit pair to embed
 					if bitsIndex+1 < secret.Size {
-						newG, err = embedIn8BitColor(secret.Data[bitsIndex+1], uint8(g))
-						if err != nil {
-							return nil, err
-						}
+						newG = embedIn8BitColor(secret.Data[bitsIndex+1], uint8(g))
 						// Check if there is a next bit pair to embed
 						if bitsIndex+2 < secret.Size {
-							newB, err = embedIn8BitColor(secret.Data[bitsIndex+2], uint8(b))
-							if err != nil {
-								return nil, err
-							}
+							newB = embedIn8BitColor(secret.Data[bitsIndex+2], uint8(b))
 							// Check if there is a next bit pair to embed
 							if bitsIndex+3 < secret.Size {
-								newA, err = embedIn8BitColor(secret.Data[bitsIndex+3], uint8(a))
-								if err != nil {
-									return nil, err
-								}
+								newA = embedIn8BitColor(secret.Data[bitsIndex+3], uint8(a))
 							} else {
 								// No more message bits to embed, copy color value
 								newA = uint8(a)
@@ -188,35 +160,39 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 	return newGif, nil
 }
 
-func embedIn8BitColor(a []string, b uint8) (uint8, error) {
-	colorVal := strconv.FormatUint(uint64(b), 2)
-	colorBits := strings.Split(ZeroPadLeft(colorVal, 8), "")
-	// Least Significant Bits become bit pair of encoded msg
-	colorBits[len(colorBits)-2] = a[0]
-	colorBits[len(colorBits)-1] = a[1]
+func embedIn8BitColor(a byte, b uint8) uint8 {
+	c := b | a
+	return uint8(c)
+	// colorVal := strconv.FormatUint(uint64(b), 2)
+	// colorBits := strings.Split(ZeroPadLeft(colorVal, 8), "")
+	// // Least Significant Bits become bit pair of encoded msg
+	// colorBits[len(colorBits)-2] = a[0]
+	// colorBits[len(colorBits)-1] = a[1]
 
-	// Rejoin & reparse the new color values
-	colorStr := strings.Join(colorBits, "")
-	newColor, err := strconv.ParseUint(colorStr, 2, 64)
-	if err != nil {
-		return 0, err
-	}
-	return uint8(newColor), nil
+	// // Rejoin & reparse the new color values
+	// colorStr := strings.Join(colorBits, "")
+	// newColor, err := strconv.ParseUint(colorStr, 2, 64)
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// return uint8(newColor), nil
 }
 
-func embedIn16BitColor(a []string, b uint32) (uint16, error) {
-	colorVal := strconv.FormatUint(uint64(b), 2)
-	colorBits := strings.Split(ZeroPadLeft(colorVal, 16), "")
-	// Least Significant Bits become bit pair of encoded msg
-	colorBits[len(colorBits)-2] = a[0]
-	colorBits[len(colorBits)-1] = a[1]
+func embedIn16BitColor(a uint8, b uint32) uint16 {
+	c := b | uint32(a)
+	return uint16(c)
+	// colorVal := strconv.FormatUint(uint64(b), 2)
+	// colorBits := strings.Split(ZeroPadLeft(colorVal, 16), "")
+	// // Least Significant Bits become bit pair of encoded msg
+	// colorBits[len(colorBits)-2] = a[0]
+	// colorBits[len(colorBits)-1] = a[1]
 
-	// Rejoin & reparse the new color values
-	colorStr := strings.Join(colorBits, "")
-	newColor, err := strconv.ParseUint(colorStr, 2, 64)
-	if err != nil {
-		return 0, err
-	}
+	// // Rejoin & reparse the new color values
+	// colorStr := strings.Join(colorBits, "")
+	// newColor, err := strconv.ParseUint(colorStr, 2, 64)
+	// if err != nil {
+	// 	return 0, err
+	// }
 
-	return uint16(newColor), nil
+	// return uint16(newColor), nil
 }

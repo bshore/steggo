@@ -55,7 +55,7 @@ type Secret struct {
 	// Header is included at the beginning of Data as a key/value store
 	DataHeader Header
 	// Data holds the contents of what is being embedded into a file.
-	Data [][]string
+	Data []byte
 	// Message holds the contents of what had been extracted froma  file.
 	Message []byte
 }
@@ -67,21 +67,29 @@ func (s *Secret) FormatSecretData(msg string) error {
 		return err
 	}
 	msgBytes := []byte(string(header) + msg)
-	var bitArr [][]string
+	var bitArr []byte
 	for _, b := range msgBytes {
-		binStr := strconv.FormatInt(int64(b), 2)
-		bits := strings.Split(ZeroPadLeft(binStr, 8), "")
-		for i, bit := range bits {
-			// Current iteration is odd ?
-			if i%2 != 0 && i != 0 {
-				// Grab bits in pairs (01, 23, 45, 67)
-				// ------1- two's bit
-				two := bit
-				// -------1 one's bit
-				one := bits[i-1]
-				bitArr = append(bitArr, []string{two, one})
-			}
-		}
+		// Get bit values in pairs by shifting bits X places
+		// and taking the 2's and 1's place by and-ing 3
+		sevenEight := b >> 6 & 3
+		fiveSix := b >> 4 & 3
+		threeFour := b >> 2 & 3
+		oneTwo := b & 3
+		bitArr = append(bitArr, uint8(sevenEight), uint8(fiveSix), uint8(threeFour), uint8(oneTwo))
+
+		// binStr := strconv.FormatInt(int64(b), 2)
+		// bits := strings.Split(ZeroPadLeft(binStr, 8), "")
+		// for i, bit := range bits {
+		// 	// Current iteration is odd ?
+		// 	if i%2 != 0 && i != 0 {
+		// 		// Grab bits in pairs (01, 23, 45, 67)
+		// 		// ------1- two's bit
+		// 		two := bits[i-1]
+		// 		// -------1 one's bit
+		// 		one := bit
+		// 		bitArr = append(bitArr, []string{two, one})
+		// 	}
+		// }
 	}
 	s.Size = len(bitArr)
 	s.Data = bitArr
