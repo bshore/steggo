@@ -67,29 +67,23 @@ func (s *Secret) FormatSecretData(msg string) error {
 		return err
 	}
 	msgBytes := []byte(string(header) + msg)
+	fmt.Println(string(header))
 	var bitArr []byte
 	for _, b := range msgBytes {
-		// Get bit values in pairs by shifting bits X places
-		// and taking the 2's and 1's place by and-ing 3
-		sevenEight := b >> 6 & 3
-		fiveSix := b >> 4 & 3
-		threeFour := b >> 2 & 3
-		oneTwo := b & 3
-		bitArr = append(bitArr, uint8(sevenEight), uint8(fiveSix), uint8(threeFour), uint8(oneTwo))
+		// // Get bit values in pairs of 2
+		// sevenEight := (b >> 6) & 3 // shifts bb------ to ------bb and gets last 2 bits value
+		// fiveSix := (b >> 4) & 3    // shifts --bb---- to ------bb and gets last 2 bits value
+		// threeFour := (b >> 2) & 3  // shifts ----bb-- to ------bb and gets last 2 bits value
+		// oneTwo := b & 3            // leaves ------bb and just gets last 2 bits value
+		// bitArr = append(bitArr, uint8(sevenEight), uint8(fiveSix), uint8(threeFour), uint8(oneTwo))
 
-		// binStr := strconv.FormatInt(int64(b), 2)
-		// bits := strings.Split(ZeroPadLeft(binStr, 8), "")
-		// for i, bit := range bits {
-		// 	// Current iteration is odd ?
-		// 	if i%2 != 0 && i != 0 {
-		// 		// Grab bits in pairs (01, 23, 45, 67)
-		// 		// ------1- two's bit
-		// 		two := bits[i-1]
-		// 		// -------1 one's bit
-		// 		one := bit
-		// 		bitArr = append(bitArr, []string{two, one})
-		// 	}
-		// }
+		// Get bit values in a group of 2-3-3 (R-G-B)
+		// sevenEight uses & 131 to set the 128 bit, so embedding knows to zero out
+		// the last 2 bits of a color value, instead of zeroing out the last 3 bits
+		sevenEight := (b >> 6) & 131 // shifts BB------ to ------BB and gets last 2 bits value
+		fourFiveSix := (b >> 3) & 7  // shifts --BBB--- to -----BBB and gets last 3 bits value
+		oneTwoThree := b & 7         // just gets -----BBB last 3 bits value
+		bitArr = append(bitArr, uint8(sevenEight), uint8(fourFiveSix), uint8(oneTwoThree))
 	}
 	s.Size = len(bitArr)
 	s.Data = bitArr
@@ -123,8 +117,8 @@ func ParseEmbedSecret(f *Flags) (*Secret, error) {
 		msg = string(bytes)
 		header.Type = filepath.Ext(f.MessageFile)
 	} else if f.Text != "" {
-		header.Type = "text"
-		s.Type = "text"
+		header.Type = "txt"
+		s.Type = "txt"
 		msg = f.Text
 	}
 	// Check for Pre Encoding
@@ -173,7 +167,7 @@ func ParseEmbedSecret(f *Flags) (*Secret, error) {
 	}
 	// Size of the secret is length of msg * 4
 	// because each byte (8) is split into pairs of 2
-	header.Size = strconv.FormatInt(int64((len(msg) * 4)), 10)
+	header.Size = strconv.FormatInt(int64(len(msg)), 10)
 	s.DataHeader = header
 	err := s.FormatSecretData(msg)
 	if err != nil {

@@ -132,13 +132,12 @@ func main() {
 		extractSecret, err := process.ParseExtractSecret(flags)
 		if err != nil {
 			panic(err)
-			// os.Exit(1)
 		}
 		err = process.Extract(extractSecret)
 		if err != nil {
 			panic(err)
-			// os.Exit(1)
 		}
+		os.Exit(0)
 	}
 	embedSecret, err := process.ParseEmbedSecret(flags)
 	if err != nil {

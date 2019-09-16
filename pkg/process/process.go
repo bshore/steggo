@@ -166,6 +166,15 @@ func Extract(secret *Secret) error {
 		if err != nil {
 			return fmt.Errorf("Error decoding JPEG file: (%v)", err)
 		}
+		extracted, err := ExtractMsgFromImage(secret, loadedImage)
+		if err != nil {
+			return fmt.Errorf("Error extracting message from file: (%v)", err)
+		}
+		err = WriteFile(extracted.Message, extracted.OutputDir, extracted.DataHeader.Type)
+		if err != nil {
+			return fmt.Errorf("Error creating output file: (%v)", err)
+		}
+		return nil
 	} else if format == "bmp" {
 		// =====
 		// Handle BMP
@@ -174,6 +183,15 @@ func Extract(secret *Secret) error {
 		if err != nil {
 			return fmt.Errorf("Error decoding BMP file: (%v)", err)
 		}
+		extracted, err := ExtractMsgFromImage(secret, loadedImage)
+		if err != nil {
+			return fmt.Errorf("Error extracting message from file: (%v)", err)
+		}
+		err = WriteFile(extracted.Message, extracted.OutputDir, extracted.DataHeader.Type)
+		if err != nil {
+			return fmt.Errorf("Error creating output file: (%v)", err)
+		}
+		return nil
 	} else if format == "gif" {
 		// =====
 		// Handle GIF
@@ -182,12 +200,18 @@ func Extract(secret *Secret) error {
 		if err != nil {
 			return fmt.Errorf("Error decoding GIF file: (%v)", err)
 		}
-		_ = loadedGIF
-	} else {
-		// =====
-		// Handle ???
-		// ====
-		return fmt.Errorf("Unsupported source file format: %v", format)
+		extracted, err := ExtractMsgFromGif(secret, loadedGIF)
+		if err != nil {
+			return fmt.Errorf("Error extracting message from file: (%v)", err)
+		}
+		err = WriteFile(extracted.Message, extracted.OutputDir, extracted.DataHeader.Type)
+		if err != nil {
+			return fmt.Errorf("Error creating output file: (%v)", err)
+		}
+		return nil
 	}
-	return nil
+	// =====
+	// Handle ???
+	// ====
+	return fmt.Errorf("Unsupported source file format: %v", format)
 }
