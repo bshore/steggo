@@ -96,7 +96,7 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 		if nextFrame > len(secret.Data) {
 			nextFrame = len(secret.Data) - 1
 		}
-		fmt.Printf("BitsIndex: %v \tNextFrame: %v\n", bitsIndex, nextFrame)
+		// fmt.Printf("BitsIndex: %v \tNextFrame: %v\n", bitsIndex, nextFrame)
 		// The image rectangle bounds
 		bounds := img.Bounds()
 		// An empty frame with the same size as the source GIF and an empty color palette
