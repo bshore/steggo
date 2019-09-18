@@ -1,13 +1,21 @@
 package process
 
 import (
+	"image"
+	"image/color"
 	"os"
 	"path/filepath"
+	"sort"
 )
 
 /*
 	This file contains generic struct types and helper functions
 */
+
+// GifMaxPerFrame is the sum of RGB pixels for which embedding can occur per frame.
+// Each color is made up of 3 bytes, Local Color Table has a max of 256 colors:
+// 3 * 256 = 768
+const GifMaxPerFrame int = 768
 
 // Flags holds the types of flags allowed by the script
 type Flags struct {
@@ -52,4 +60,82 @@ func WriteFile(data []byte, out, ext string) error {
 	defer newFile.Close()
 	_, err = newFile.Write(data)
 	return err
+}
+
+// GetGifFrameColorPalette gathers a Gif Frame's Color Palette
+func GetGifFrameColorPalette(img *image.Paletted, data []byte) []color.Color {
+	var bitsIndex int
+	var newR, newG, newB uint8
+	var colorPalette []color.Color
+	paletteMap := make(map[color.Color]struct{})
+	bounds := img.Bounds()
+	// For each vertical row
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		// For each pixel in each row
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			if bitsIndex < len(data) && bitsIndex < GifMaxPerFrame {
+				newR = embedInColor(data[bitsIndex], uint8(r))
+				if bitsIndex+1 < len(data) {
+					newG = embedInColor(data[bitsIndex+1], uint8(g))
+					if bitsIndex+2 < len(data) {
+						newB = embedInColor(data[bitsIndex+2], uint8(b))
+					} else {
+						newB = uint8(b)
+					}
+				} else {
+					newG = uint8(g)
+				}
+				newColor := &color.RGBA{
+					R: newR,
+					G: newG,
+					B: newB,
+					A: uint8(a),
+				}
+				if _, ok := paletteMap[newColor]; !ok {
+					paletteMap[newColor] = struct{}{}
+				}
+			}
+			bitsIndex += 3
+		}
+	}
+	var j int
+	for len(paletteMap) < 256 && j < len(img.Palette) {
+		if _, ok := paletteMap[img.Palette[j]]; !ok {
+			paletteMap[img.Palette[j]] = struct{}{}
+		}
+		j++
+	}
+	for c := range paletteMap {
+		colorPalette = append(colorPalette, c)
+	}
+	sort.SliceStable(colorPalette, func(i, j int) bool {
+		r1, g1, b1, _ := colorPalette[i].RGBA()
+		r2, g2, b2, _ := colorPalette[j].RGBA()
+		return (r1 + g1 + b1) < (r2 + g2 + b2)
+	})
+	return colorPalette
+}
+
+func embedInColor(a byte, b uint8) uint8 {
+	// 128 bit set indicates to zero out last 2 bits
+	if a > 128 {
+		b = b &^ 0x03 // zero out last 2 bits
+		a = a & 3     // unset the 128 bit
+	} else {
+		b = b &^ 0x07 // zero out last 3 bits
+	}
+	c := b | a
+	return c
+}
+
+func embedIn16BitColor(a uint8, b uint32) uint16 {
+	if a > 128 {
+		b = b &^ 0x03 // zero out last 2 bits
+		a = a & 3     // unset the 128 bit
+	} else {
+		b = b &^ 0x07 // zero out the last 3 bits
+	}
+	c := b | uint32(a)
+	return uint16(c)
 }

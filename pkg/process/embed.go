@@ -6,13 +6,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/gif"
-	"sort"
 )
-
-// GifMaxPerFrame is the sum of RGB pixels for which embedding can occur per frame.
-// Each color is made up of 3 bytes, Local Color Table has a max of 256 colors:
-// 3 * 256 = 768
-const GifMaxPerFrame int = 768
 
 // EmbedMsgInImage takes the message string and embeds it
 // in the source file's byte string using Least Significant Bit(s)
@@ -98,12 +92,21 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 	}
 	// For each image frame
 	for i, img := range file.Image {
+		nextFrame := bitsIndex + GifMaxPerFrame
+		if nextFrame > len(secret.Data) {
+			nextFrame = len(secret.Data) - 1
+		}
+		fmt.Printf("BitsIndex: %v \tNextFrame: %v\n", bitsIndex, nextFrame)
 		// The image rectangle bounds
 		bounds := img.Bounds()
-		paletteMap := make(map[color.Color]struct{})
-		colorPalette := []color.Color{}
 		// An empty frame with the same size as the source GIF and an empty color palette
-		newFrame = image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), colorPalette)
+		newFrame = image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), nil)
+		colorPalette := GetGifFrameColorPalette(img, secret.Data[bitsIndex:nextFrame])
+		if bitsIndex >= GifMaxPerFrame*(i+1) || doneEmbedding {
+			newFrame.Palette = img.Palette
+		} else {
+			newFrame.Palette = colorPalette
+		}
 		// For each vertical row
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			// For each pixel in each row
@@ -137,9 +140,6 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 							B: newB,
 							A: uint8(a),
 						}
-						if _, ok := paletteMap[newColor]; !ok {
-							paletteMap[newColor] = struct{}{}
-						}
 						newFrame.Set(x, y, newColor)
 						bitsIndex += 3
 					} else {
@@ -149,9 +149,6 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 							G: uint8(g),
 							B: uint8(b),
 							A: uint8(a),
-						}
-						if _, ok := paletteMap[newColor]; !ok {
-							paletteMap[newColor] = struct{}{}
 						}
 						newFrame.Set(x, y, newColor)
 						doneEmbedding = true
@@ -163,42 +160,6 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 		if bitsIndex >= GifMaxPerFrame*(i+1) {
 			bitsIndex++
 		}
-		if paletteMap != nil {
-			// If all colors not used by embedding, copy the remainder from source image
-			if len(paletteMap) < len(img.Palette) {
-				// If our new color palette can be merged with the source and still be under 256
-				if len(paletteMap)+len(img.Palette) < 256 {
-					for _, col := range img.Palette {
-						if _, ok := paletteMap[col]; !ok {
-							paletteMap[col] = struct{}{}
-						}
-					}
-				} else {
-					var j int
-					// Loop until source palette consumed, or we've reached the 256 cap
-					for j = 0; j < (256 - len(paletteMap)); j++ {
-						if j >= len(img.Palette) || len(paletteMap) == 256 {
-							break
-						}
-						if _, ok := paletteMap[img.Palette[j]]; !ok {
-							paletteMap[img.Palette[j]] = struct{}{}
-						}
-					}
-				}
-			}
-			// Convert the current frame's color palette to a slice of colors
-			for c := range paletteMap {
-				colorPalette = append(colorPalette, c)
-			}
-			sort.SliceStable(colorPalette, func(i, j int) bool {
-				r1, g1, b1, _ := colorPalette[i].RGBA()
-				r2, g2, b2, _ := colorPalette[j].RGBA()
-				return (r1 + g1 + b1) < (r2 + g2 + b2)
-			})
-			newFrame.Palette = colorPalette
-		} else {
-			newFrame.Palette = img.Palette
-		}
 		// Append the current frame since
 		newGif.Image = append(newGif.Image, newFrame)
 		if doneEmbedding {
@@ -208,28 +169,4 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 		}
 	}
 	return newGif, nil
-}
-
-func embedInColor(a byte, b uint8) uint8 {
-	// 128 bit set indicates to zero out last 2 bits
-	if a > 128 {
-		b = b &^ 0x03 // zero out last 2 bits
-		a = a & 3     // unset the 128 bit
-	} else {
-		b = b &^ 0x07 // zero out last 3 bits
-	}
-	c := b | a
-	return c
-}
-
-// May make a comeback now that embed/extract works
-func embedIn16BitColor(a uint8, b uint32) uint16 {
-	if a > 128 {
-		b = b &^ 0x03 // zero out last 2 bits
-		a = a & 3     // unset the 128 bit
-	} else {
-		b = b &^ 0x07 // zero out the last 3 bits
-	}
-	c := b | uint32(a)
-	return uint16(c)
 }
