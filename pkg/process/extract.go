@@ -56,7 +56,6 @@ func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {
 	var headBytes, msgBytes []byte
 	var headerFound bool
 	var header Header
-	var poo int
 	// For each image frame
 	for _, img := range file.Image {
 		bounds := img.Bounds()
@@ -65,10 +64,6 @@ func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {
 			// vor each pixel in each row
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
 				r, g, b, _ := img.At(x, y).RGBA()
-				if poo < 10 {
-					fmt.Printf("R: %08b\tG: %08b\tB: %08b\n", uint8(r), uint8(g), uint8(b))
-				}
-				poo++
 				if headerFound {
 					if int64(len(msgBytes)) < size {
 						msgbyte := extractFromColor(uint8(r), uint8(g), uint8(b))
@@ -91,7 +86,6 @@ func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {
 			}
 		}
 	}
-	fmt.Println(headBytes[:30])
 	secret.DataHeader = header
 	secret.Message = msgBytes
 	return secret, nil

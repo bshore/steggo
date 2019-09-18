@@ -67,22 +67,14 @@ func (s *Secret) FormatSecretData(msg string) error {
 		return err
 	}
 	msgBytes := []byte(string(header) + msg)
-	fmt.Println(string(header))
 	var bitArr []byte
 	for _, b := range msgBytes {
-		// // Get bit values in pairs of 2
-		// sevenEight := (b >> 6) & 3 // shifts bb------ to ------bb and gets last 2 bits value
-		// fiveSix := (b >> 4) & 3    // shifts --bb---- to ------bb and gets last 2 bits value
-		// threeFour := (b >> 2) & 3  // shifts ----bb-- to ------bb and gets last 2 bits value
-		// oneTwo := b & 3            // leaves ------bb and just gets last 2 bits value
-		// bitArr = append(bitArr, uint8(sevenEight), uint8(fiveSix), uint8(threeFour), uint8(oneTwo))
-
 		// Get bit values in a group of 2-3-3 (R-G-B)
 		// sevenEight uses & 131 to set the 128 bit, so embedding knows to zero out
 		// the last 2 bits of a color value, instead of zeroing out the last 3 bits
-		sevenEight := (b >> 6) & 131 // shifts BB------ to ------BB and gets last 2 bits value
-		fourFiveSix := (b >> 3) & 7  // shifts --BBB--- to -----BBB and gets last 3 bits value
-		oneTwoThree := b & 7         // just gets -----BBB last 3 bits value
+		sevenEight := (b >> 6) & 131 // shifts bb------ to ------bb and gets last 2 bits value
+		fourFiveSix := (b >> 3) & 7  // shifts --bbb--- to -----bbb and gets last 3 bits value
+		oneTwoThree := b & 7         // just gets -----bbb last 3 bits value
 		bitArr = append(bitArr, uint8(sevenEight), uint8(fourFiveSix), uint8(oneTwoThree))
 	}
 	s.Size = len(bitArr)
@@ -117,7 +109,7 @@ func ParseEmbedSecret(f *Flags) (*Secret, error) {
 		msg = string(bytes)
 		header.Type = filepath.Ext(f.MessageFile)
 	} else if f.Text != "" {
-		header.Type = "txt"
+		header.Type = ".txt"
 		s.Type = "txt"
 		msg = f.Text
 	}
