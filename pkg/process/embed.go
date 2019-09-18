@@ -70,6 +70,9 @@ func EmbedMsgInImage(secret *Secret, file image.Image) (draw.Image, error) {
 	The LCT only supports up to 256 colors, which	I build up color by color with pixel values I am using.
 	The problem is, when reading the pixels back, they seem to "round" to the nearest color value,
 	instead of what pixel value they actually are.
+
+	Idea: Populate the LCT before setting pixel values, maybe since it lacks context or something and
+	it treats every pixel as the same color value??
 */
 
 // EmbedMsgInGIF takes the message string and embeds it into a GIF file
