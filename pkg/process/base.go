@@ -139,3 +139,19 @@ func embedIn16BitColor(a uint8, b uint32) uint16 {
 	c := b | uint32(a)
 	return uint16(c)
 }
+
+func extractFromColor(r, g, b uint8) byte {
+	// Get last bits of each color to reconstruct a message byte
+	rBits := r & 3
+	gBits := g & 7
+	bBits := b & 7
+
+	var newByte uint8
+	// Assign color bits and shift left for each color pixel
+	newByte = newByte | (rBits & 3) // ------bb
+	newByte = newByte << 3          // ---bb---
+	newByte = newByte | (gBits & 7) // -----bbb
+	newByte = newByte << 3          // bbbbb---
+	newByte = newByte | (bBits & 7) // bbbbbbbb
+	return newByte
+}

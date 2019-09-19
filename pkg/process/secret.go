@@ -178,9 +178,3 @@ func ParseExtractSecret(f *Flags) (*Secret, error) {
 	// The rest is figured out later?
 	return s, nil
 }
-
-// ReconstructMessage takes bit pairs and reconstructs a message
-// back into its source string
-func ReconstructMessage(bitArr [][]string) string {
-	return ""
-}

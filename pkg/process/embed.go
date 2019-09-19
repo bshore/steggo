@@ -61,13 +61,79 @@ func EmbedMsgInImage(secret *Secret, file image.Image) (draw.Image, error) {
 }
 
 /*
-	The LCT only supports up to 256 colors, which	I build up color by color with pixel values I am using.
-	The problem is, when reading the pixels back, they seem to "round" to the nearest color value,
-	instead of what pixel value they actually are.
-
-	Idea: Populate the LCT before setting pixel values, maybe since it lacks context or something and
-	it treats every pixel as the same color value??
+	JPEG's gotta spoil my party too I guess. Compression makes the secret message non-extractable.
+	Something to try:
+	Convert the RGBA pixel to YCbCr
+	Encode the message in that value
+	Convert the YCbCr back to RGBA
+	Set the new RGBA pixel
 */
+
+// EmbedMsgInJPEG takes the message string and embeds it
+// in the source file's byte string using Least Significant Bit(s)
+// func EmbedMsgInJPEG(secret *Secret, file image.Image) (draw.Image, error) {
+// 	var bitsIndex int
+// 	var newYY, newCb, newCr uint8
+// 	var newR, newG, newB uint8
+// 	bounds := file.Bounds()
+// 	pixels := bounds.Max.X * bounds.Max.Y
+// 	if !(secret.Size < pixels) {
+// 		return nil, fmt.Errorf("Secret message won't fit in image: %v LSB's to embed, %v pixels available", secret.Size, pixels)
+// 	}
+// 	newFile := image.NewNRGBA64(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
+// 	// For each vertical row
+// 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+// 		// For each pixel in each row
+// 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+// 			red32, green32, blue32, alpha := file.At(x, y).RGBA()
+// 			// Left 8 bits of 16 bit color (bbbbbbbb--------)
+// 			r16 := uint16(red32 & 65280)
+// 			g16 := uint16(green32 & 65280)
+// 			b16 := uint16(blue32 & 65280)
+// 			// Right 8 bits of 16 bit color (--------bbbbbbbb)
+// 			r := uint8(red32 & 255)
+// 			g := uint8(green32 & 255)
+// 			b := uint8(blue32 & 255)
+// 			// Convert the RGB to a Y'CbCr compressed (?) JPEG color
+// 			yy, cb, cr := color.RGBToYCbCr(r, g, b)
+// 			// If the iteration is still under the length of message bits
+// 			if bitsIndex < secret.Size {
+// 				newYY = embedInColor(secret.Data[bitsIndex], yy)
+// 				// Check if there is a next bit pair to embed
+// 				if bitsIndex+1 < secret.Size {
+// 					newCb = embedInColor(secret.Data[bitsIndex+1], cb)
+// 					// Check if there is a next bit pair to embed
+// 					if bitsIndex+2 < secret.Size {
+// 						newCr = embedInColor(secret.Data[bitsIndex+2], cr)
+// 					} else {
+// 						// No more message bits to embed, copy color value
+// 						newCr = cr
+// 					}
+// 				} else {
+// 					// No more message bits to embed, copy color value
+// 					newCb = cb
+// 				}
+// 				// Convert the Y'CbCr back to an RGB color
+// 				newR, newG, newB = color.YCbCrToRGB(newYY, newCb, newCr)
+// 			} else {
+// 				// No more message bits to embed, just copy the rest of the pixels
+// 				newR = r
+// 				newG = g
+// 				newB = b
+// 			}
+// 			// Set the new RGBA64 pixel value with left half of uint16 from above
+// 			newColor := color.NRGBA64{
+// 				R: r16 | uint16(newR),
+// 				G: g16 | uint16(newG),
+// 				B: b16 | uint16(newB),
+// 				A: uint16(alpha),
+// 			}
+// 			newFile.SetNRGBA64(x, y, newColor)
+// 			bitsIndex += 3
+// 		}
+// 	}
+// 	return newFile, nil
+// }
 
 // EmbedMsgInGIF takes the message string and embeds it into a GIF file
 // frame by frame using Least Significant Bit(s)

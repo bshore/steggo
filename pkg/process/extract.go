@@ -43,6 +43,7 @@ func ExtractMsgFromImage(secret *Secret, file image.Image) (*Secret, error) {
 			}
 		}
 	}
+	fmt.Println(string(headBytes[:50]))
 	secret.DataHeader = header
 	secret.Message = msgBytes
 	return secret, nil
@@ -90,23 +91,3 @@ func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {
 	secret.Message = msgBytes
 	return secret, nil
 }
-
-func extractFromColor(r, g, b uint8) byte {
-	// Get last bits of each color to reconstruct a message byte
-	rBits := r & 3
-	gBits := g & 7
-	bBits := b & 7
-
-	var newByte uint8
-	// Assign color bits and shift left for each color pixel
-	newByte = newByte | (rBits & 3) // ------bb
-	newByte = newByte << 3          // ---bb---
-	newByte = newByte | (gBits & 7) // -----bbb
-	newByte = newByte << 3          // bbbbb---
-	newByte = newByte | (bBits & 7) // bbbbbbbb
-	return newByte
-}
-
-// extract16BitColor(r, g, b uint32) byte {
-//
-//}
