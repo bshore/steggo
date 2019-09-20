@@ -43,7 +43,6 @@ func ExtractMsgFromImage(secret *Secret, file image.Image) (*Secret, error) {
 			}
 		}
 	}
-	fmt.Println(string(headBytes[:50]))
 	secret.DataHeader = header
 	secret.Message = msgBytes
 	return secret, nil

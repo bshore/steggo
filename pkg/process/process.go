@@ -64,12 +64,12 @@ func Embed(secret *Secret) error {
 		if err != nil {
 			return fmt.Errorf("Error embedding message in file: (%v)", err)
 		}
-		newFile, err := os.Create(filepath.Join(secret.OutputDir, "output."+format))
+		newFile, err := os.Create(filepath.Join(secret.OutputDir, "output_"+format+".png"))
 		if err != nil {
 			return fmt.Errorf("Error creating output file: (%v)", err)
 		}
 		defer newFile.Close()
-		err = jpeg.Encode(newFile, embedded, &jpeg.Options{Quality: 100})
+		err = png.Encode(newFile, embedded)
 		if err != nil {
 			return fmt.Errorf("Error encoding new JPEG image: (%v)", err)
 		}
