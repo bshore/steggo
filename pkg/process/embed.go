@@ -67,10 +67,11 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 	var doneEmbedding bool
 	var newR, newG, newB uint8
 	var newFrame *image.Paletted
+	var colorPalette []color.Color
 	// Color table only allows for 256 color combinations, multiply by number of frames for available pixels.
 	pixels := 256 * len(file.Image)
 	// If the secret's size is not under the amount of available pixels, we can't embed.
-	if !(secret.Size < pixels) {
+	if !(secret.Size/3 < pixels) {
 		return nil, fmt.Errorf("Secret message won't fit in image: %v LSB's to embed, %v pixels available", secret.Size, pixels)
 	}
 	newGif := &gif.GIF{
@@ -82,19 +83,18 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 		BackgroundIndex: file.BackgroundIndex,
 	}
 	// For each image frame
-	for i, img := range file.Image {
+	for frameNum, frameImg := range file.Image {
 		nextFrame := bitsIndex + GifMaxPerFrame
 		if nextFrame > len(secret.Data) {
 			nextFrame = len(secret.Data) - 1
 		}
-		// fmt.Printf("BitsIndex: %v \tNextFrame: %v\n", bitsIndex, nextFrame)
 		// The image rectangle bounds
-		bounds := img.Bounds()
+		bounds := frameImg.Bounds()
 		// An empty frame with the same size as the source GIF and an empty color palette
 		newFrame = image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), nil)
-		colorPalette := GetGifFrameColorPalette(img, secret.Data[bitsIndex:nextFrame])
-		if bitsIndex >= GifMaxPerFrame*(i+1) || doneEmbedding {
-			newFrame.Palette = img.Palette
+		colorPalette = GetGifFrameColorPalette(frameImg, secret.Data[bitsIndex:nextFrame])
+		if doneEmbedding {
+			newFrame.Palette = frameImg.Palette
 		} else {
 			newFrame.Palette = colorPalette
 		}
@@ -102,60 +102,58 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			// For each pixel in each row
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
-				// If bitsIndex greater than GifMaxPerFrame * current frame number, we can no longer embed in this frame
-				if bitsIndex >= GifMaxPerFrame*(i+1) || doneEmbedding {
-					newFrame.Set(x, y, img.At(x, y))
+				r, g, b, a := frameImg.At(x, y).RGBA()
+				if bitsIndex >= GifMaxPerFrame*(frameNum+1) {
+					newFrame.Set(x, y, frameImg.At(x, y))
 					continue
-				} else {
-					r, g, b, a := img.At(x, y).RGBA()
-					// If the iteration is still under the length of message bits
-					if bitsIndex < secret.Size {
-						newR = embedInColor(secret.Data[bitsIndex], uint8(r))
+				}
+				// If the iteration is still under the length of message bits
+				if bitsIndex < secret.Size {
+					newR = embedInColor(secret.Data[bitsIndex], uint8(r))
+					// Check if next msg byte to embed and if byte will fit
+					if bitsIndex+1 < secret.Size && (bitsIndex+1)%GifMaxPerFrame != 0 {
+						newG = embedInColor(secret.Data[bitsIndex+1], uint8(g))
 						// Check if next msg byte to embed and if byte will fit
-						if bitsIndex+1 < secret.Size && bitsIndex+1%GifMaxPerFrame != 0 {
-							newG = embedInColor(secret.Data[bitsIndex+1], uint8(g))
-							// Check if next msg byte to embed and if byte will fit
-							if bitsIndex+2 < secret.Size && bitsIndex+1%GifMaxPerFrame != 0 {
-								newB = embedInColor(secret.Data[bitsIndex+2], uint8(b))
-							} else {
-								// No more message bits to embed, copy color value
-								newB = uint8(b)
-							}
+						if bitsIndex+2 < secret.Size && (bitsIndex+1)%GifMaxPerFrame != 0 {
+							newB = embedInColor(secret.Data[bitsIndex+2], uint8(b))
 						} else {
 							// No more message bits to embed, copy color value
-							newG = uint8(g)
+							newB = uint8(b)
 						}
-						newColor := color.RGBA{
-							R: newR,
-							G: newG,
-							B: newB,
-							A: uint8(a),
-						}
-						newFrame.Set(x, y, newColor)
-						bitsIndex += 3
 					} else {
-						// No more message bits to embed, just copy the remaining pixels for frame
-						newColor := color.RGBA{
-							R: uint8(r),
-							G: uint8(g),
-							B: uint8(b),
-							A: uint8(a),
-						}
-						newFrame.Set(x, y, newColor)
-						doneEmbedding = true
+						// No more message bits to embed, copy color value
+						newG = uint8(g)
 					}
+					newColor := color.RGBA{
+						R: newR,
+						G: newG,
+						B: newB,
+						A: uint8(a),
+					}
+					newFrame.Set(x, y, newColor)
+					bitsIndex += 3
+				} else {
+					// No more message bits to embed, just copy the remaining pixels for frame
+					newColor := color.RGBA{
+						R: uint8(r),
+						G: uint8(g),
+						B: uint8(b),
+						A: uint8(a),
+					}
+					newFrame.Set(x, y, newColor)
+					doneEmbedding = true
 				}
 			} // End x
 		} // End y
 		// If bitsIndex greater than GifMaxPerFrame * current frame, +1 for next frame
-		if bitsIndex >= GifMaxPerFrame*(i+1) {
+		if bitsIndex == GifMaxPerFrame*(frameNum+1) {
 			bitsIndex++
 		}
 		// Append the current frame since
 		newGif.Image = append(newGif.Image, newFrame)
 		if doneEmbedding {
 			// Append the next frame and every frame after it and return
-			newGif.Image = append(newGif.Image, file.Image[i+1:]...)
+			newGif.Image = append(newGif.Image, file.Image[frameNum+1:]...)
 			return newGif, nil
 		}
 	}

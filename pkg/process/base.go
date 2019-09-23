@@ -12,6 +12,10 @@ import (
 	This file contains generic struct types and helper functions
 */
 
+// GifMaxColor is the maximum amount of colors that are supported by a frame's
+// Local Color Table.
+const GifMaxColor int = 256
+
 // GifMaxPerFrame is the sum of RGB pixels for which embedding can occur per frame.
 // Each color is made up of 3 bytes, Local Color Table has a max of 256 colors:
 // 3 * 256 = 768
