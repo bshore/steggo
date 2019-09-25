@@ -2,17 +2,15 @@ package process
 
 import (
 	"encoding/json"
-	"fmt"
 	"image"
 	"image/gif"
-	"strconv"
 )
 
 // ExtractMsgFromImage takes an Image that has had a message embedded
 // inside it and extracts the message using Least Significant Bit(s)
 func ExtractMsgFromImage(secret *Secret, file image.Image) (*Secret, error) {
 	var err error
-	var size int64
+	var size int
 	var headBytes, msgBytes []byte
 	var headerFound bool
 	var header Header
@@ -23,7 +21,7 @@ func ExtractMsgFromImage(secret *Secret, file image.Image) (*Secret, error) {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, _ := file.At(x, y).RGBA()
 			if headerFound {
-				if int64(len(msgBytes)) < size {
+				if len(msgBytes) < size {
 					msgbyte := extractFromColor(uint8(r), uint8(g), uint8(b))
 					msgBytes = append(msgBytes, msgbyte)
 				}
@@ -35,10 +33,7 @@ func ExtractMsgFromImage(secret *Secret, file image.Image) (*Secret, error) {
 				err = json.Unmarshal(headBytes, &header)
 				if err == nil {
 					headerFound = true
-					size, err = strconv.ParseInt(header.Size, 10, 64)
-					if err != nil {
-						return nil, fmt.Errorf("Error parsing secret size from header: (%v)", err)
-					}
+					size = header.Size
 				}
 			}
 		}
@@ -52,7 +47,7 @@ func ExtractMsgFromImage(secret *Secret, file image.Image) (*Secret, error) {
 // inside it and extracts the message using Least Significant Bit(s)
 func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {
 	var err error
-	var size int64
+	var size int
 	var headBytes, msgBytes []byte
 	var headerFound bool
 	var header Header
@@ -65,7 +60,7 @@ func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
 				r, g, b, _ := img.At(x, y).RGBA()
 				if headerFound {
-					if int64(len(msgBytes)) < size {
+					if len(msgBytes) < size {
 						msgbyte := extractFromColor(uint8(r), uint8(g), uint8(b))
 						msgBytes = append(msgBytes, msgbyte)
 					}
@@ -77,10 +72,7 @@ func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {
 					err = json.Unmarshal(headBytes, &header)
 					if err == nil {
 						headerFound = true
-						size, err = strconv.ParseInt(header.Size, 10, 64)
-						if err != nil {
-							return nil, fmt.Errorf("Error parsing secret size from header: (%v)", err)
-						}
+						size = header.Size
 					}
 				}
 			}

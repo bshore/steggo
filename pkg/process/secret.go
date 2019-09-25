@@ -7,7 +7,6 @@ import (
 	"lsb_encoder/pkg/encoders"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -18,11 +17,11 @@ import (
 // Header is a prefix to to identify information used during extraction.
 type Header struct {
 	// Size is the Secret.Size but stored as a JSON string.
-	Size string `json:"size"`
+	Size int `json:"sz"`
 	// Type is the Secret.Type but stored as a JSON string.
-	Type string `json:"type"`
+	Type string `json:"tp"`
 	// Enc is Secret.PreEncoding but stored as a JSON string.
-	Enc []string `json:"enc"`
+	Enc []string `json:"ec,omitempty"`
 }
 
 // Secret stores information about the input data, and the data itself
@@ -79,6 +78,7 @@ func (s *Secret) FormatSecretData(msg string) error {
 	}
 	s.Size = len(bitArr)
 	s.Data = bitArr
+	s.Message = msgBytes
 	return nil
 }
 
@@ -159,7 +159,7 @@ func ParseEmbedSecret(f *Flags) (*Secret, error) {
 	}
 	// Size of the secret is length of msg * 4
 	// because each byte (8) is split into pairs of 2
-	header.Size = strconv.FormatInt(int64(len(msg)), 10)
+	header.Size = len(msg)
 	s.DataHeader = header
 	err := s.FormatSecretData(msg)
 	if err != nil {
