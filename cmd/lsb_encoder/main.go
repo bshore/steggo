@@ -15,6 +15,7 @@ var (
 	text    = flag.String("text", "", "The text string to encode into the file")
 	stdIn   = flag.Bool("stdin", false, "Passing the message through stdin (ex: pipe command)")
 	msgFile = flag.String("msgfile", "", "The path to a text file containing the message to be endcoded")
+	bitOpt  = flag.Int("bitopt", 1, "Option for which LSBs to embed: 1 = Last Bit Only, 2 = 2-3-3/R-G-B method (default)")
 	decode  = flag.Bool("decode", false, "Decoding mode")
 	rot13   = flag.Bool("rot13", false, "Apply Rot13 pre encoding to the message before embedding")
 	base16  = flag.Bool("base16", false, "Apply Base16 pre encoding to the message before embedding")
@@ -31,6 +32,7 @@ func init() {
 	flag.StringVar(text, "t", "", "The text string to encode into the file")
 	flag.BoolVar(stdIn, "i", false, "Passing the message through stdin (ex: pipe command)")
 	flag.StringVar(msgFile, "m", "", "The path to a text file containing the message to be encoded")
+	flag.IntVar(bitOpt, "b", 2, "Option for which LSBs to embed: 1 = Last Bit Only, 2 = 2-3-3/R-G-B method (default)")
 	flag.BoolVar(decode, "d", false, "Decoding mode")
 	flag.BoolVar(rot13, "r13", false, "Apply Rot13 pre encoding to the message before embedding")
 	flag.BoolVar(base16, "b16", false, "Apply Base16 pre encoding to the message before embedding")
@@ -51,6 +53,7 @@ func parseFlags() (*process.Flags, []error) {
 		- t # or --text "The Secret Message to embed"
 		- m # or --msgfile /path/to/secret_message.txt (can be anything)
 		- i # or --stdin The secret message to embed comes from stdin (ex: pipe command)
+		- b # or --bitopt Option for which LSBs to embed: 1 = Last Bit Only, 2 = 2-3-3/R-G-B method (default)
 		- d # or --decode Extract a message from an already embedded file
 		- r13 # or --rot13 Apply Rot13 pre encoding to the message before embedding
 		- b16 # or --base16 Apply Base16 pre encoding to the message before embedding
@@ -123,6 +126,7 @@ func parseFlags() (*process.Flags, []error) {
 		OutputDir:   outFilePath,
 		Text:        *text,
 		MessageFile: msgFilePath,
+		BitOpt:      *bitOpt,
 		Decode:      *decode,
 		Rot13:       *rot13,
 		Base16:      *base16,

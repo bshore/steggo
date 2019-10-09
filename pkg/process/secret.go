@@ -16,12 +16,14 @@ import (
 
 // Header is a prefix to to identify information used during extraction.
 type Header struct {
-	// Size is the Secret.Size but stored as a JSON string.
+	// Size is the Secret.Size
 	Size int `json:"sz"`
-	// Type is the Secret.Type but stored as a JSON string.
+	// Type is the Secret.Type
 	Type string `json:"tp"`
-	// Enc is Secret.PreEncoding but stored as a JSON string.
+	// Enc is Secret.PreEncoding
 	Enc []string `json:"ec,omitempty"`
+	// BitOpt is the option for Least Significant Bits
+	BitOpt int `json:"b"`
 }
 
 // Secret stores information about the input data, and the data itself
@@ -67,14 +69,22 @@ func (s *Secret) FormatSecretData(msg string) error {
 	}
 	msgBytes := []byte(string(header) + msg)
 	var bitArr []byte
-	for _, b := range msgBytes {
-		// Get bit values in a group of 2-3-3 (R-G-B)
-		// sevenEight uses & 131 to set the 128 bit, so embedding knows to zero out
-		// the last 2 bits of a color value, instead of zeroing out the last 3 bits
-		sevenEight := (b >> 6) & 131 // shifts bb------ to ------bb and gets last 2 bits value
-		fourFiveSix := (b >> 3) & 7  // shifts --bbb--- to -----bbb and gets last 3 bits value
-		oneTwoThree := b & 7         // just gets -----bbb last 3 bits value
-		bitArr = append(bitArr, uint8(sevenEight), uint8(fourFiveSix), uint8(oneTwoThree))
+	if s.DataHeader.BitOpt == 2 {
+		for _, b := range msgBytes {
+			// Get bit values in a group of 2-3-3 (R-G-B)
+			// sevenEight uses & 131 to set the 128 bit, so embedding knows to zero out
+			// the last 2 bits of a color value, instead of zeroing out the last 3 bits
+			sevenEight := (b >> 6) & 131 // shifts bb------ to ------bb and gets last 2 bits value
+			fourFiveSix := (b >> 3) & 7  // shifts --bbb--- to -----bbb and gets last 3 bits value
+			oneTwoThree := b & 7         // just gets -----bbb last 3 bits value
+			bitArr = append(bitArr, uint8(sevenEight), uint8(fourFiveSix), uint8(oneTwoThree))
+		}
+	} else {
+		for _, b := range msgBytes {
+			// Shift each message bit to -------b and get it's value
+			bitArr = append(bitArr,
+				(b>>7)&1, (b>>6)&1, (b>>5)&1, (b>>4)&1, (b>>3)&1, (b>>2)&1, (b>>1)&1, b&1)
+		}
 	}
 	s.Size = len(bitArr)
 	s.Data = bitArr
@@ -89,6 +99,7 @@ func ParseEmbedSecret(f *Flags) (*Secret, error) {
 	var pre []encoders.EncType
 	var enc []string
 	var header Header
+	header.BitOpt = f.BitOpt
 	// Check for the source of the secret message/file
 	if f.Stdin {
 		header.Type = "stdin"

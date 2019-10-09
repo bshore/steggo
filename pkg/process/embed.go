@@ -26,13 +26,25 @@ func EmbedMsgInImage(secret *Secret, file image.Image) (draw.Image, error) {
 			r, g, b, a := file.At(x, y).RGBA()
 			// If the iteration is still under the length of message bits
 			if bitsIndex < secret.Size {
-				newR = embedIn16BitColor(secret.Data[bitsIndex], r)
+				if secret.DataHeader.BitOpt == 2 {
+					newR = embedIn16BitColor(secret.Data[bitsIndex], r)
+				} else {
+					newR = embedBitInColor(secret.Data[bitsIndex], r)
+				}
 				// Check if there is a next bit pair to embed
 				if bitsIndex+1 < secret.Size {
-					newG = embedIn16BitColor(secret.Data[bitsIndex+1], g)
+					if secret.DataHeader.BitOpt == 2 {
+						newG = embedIn16BitColor(secret.Data[bitsIndex+1], g)
+					} else {
+						newG = embedBitInColor(secret.Data[bitsIndex+1], g)
+					}
 					// Check if there is a next bit pair to embed
 					if bitsIndex+2 < secret.Size {
-						newB = embedIn16BitColor(secret.Data[bitsIndex+2], b)
+						if secret.DataHeader.BitOpt == 2 {
+							newB = embedIn16BitColor(secret.Data[bitsIndex+2], b)
+						} else {
+							newB = embedBitInColor(secret.Data[bitsIndex+2], b)
+						}
 					} else {
 						// No more message bits to embed, copy color value
 						newB = uint16(b)
@@ -106,15 +118,26 @@ func EmbedMsgInGIF(secret *Secret, file *gif.GIF) (*gif.GIF, error) {
 				// }
 				// If the iteration is still under the length of message bits
 				if bitsIndex < secret.Size {
-					newR = embedInColor(secret.Data[bitsIndex], uint8(r))
-					// Check if next msg byte to embed and if byte will fit
-					if bitsIndex+1 < secret.Size && (bitsIndex+1)%GifMaxPerFrame != 0 {
-						newG = embedInColor(secret.Data[bitsIndex+1], uint8(g))
-						// Check if next msg byte to embed and if byte will fit
-						if bitsIndex+2 < secret.Size && (bitsIndex+1)%GifMaxPerFrame != 0 {
-							newB = embedInColor(secret.Data[bitsIndex+2], uint8(b))
+					if secret.DataHeader.BitOpt == 2 {
+						newR = embedInColor(secret.Data[bitsIndex], uint8(r))
+					} else {
+						newR = embedBitIn8Color(secret.Data[bitsIndex], uint8(r))
+					}
+					// Check if there is a next bit pair to embed
+					if bitsIndex+1 < secret.Size {
+						if secret.DataHeader.BitOpt == 2 {
+							newG = embedInColor(secret.Data[bitsIndex+1], uint8(g))
 						} else {
-							// No more message bits to embed, copy color value
+							newG = embedBitIn8Color(secret.Data[bitsIndex+1], uint8(g))
+						}
+						// Check if there is a next bit pair to embed
+						if bitsIndex+2 < secret.Size {
+							if secret.DataHeader.BitOpt == 2 {
+								newB = embedInColor(secret.Data[bitsIndex+2], uint8(b))
+							} else {
+								newB = embedBitIn8Color(secret.Data[bitsIndex+2], uint8(b))
+							}
+						} else {
 							newB = uint8(b)
 						}
 					} else {
