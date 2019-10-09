@@ -75,18 +75,6 @@ func parseFlags() (*process.Flags, []error) {
 			-o ~/Desktop/Pics \
 	
 		# Fancy
-		go run ./cmd/lsb_encoder/ \
-			-s ~/Desktop/Pics/funny_cat.gif \
-			-o ~/Desktop/Pics \
-			--complex "b16,b32,b64,b85" \
-			--msgfile ~/Downloads/lorem_ipsum_paragraph.txt
-	
-		go run ./cmd/lsb_encoder/ --decode \
-			-s ~/Desktop/Pics/output.gif \
-			-o ~/Desktop/Pics \
-			--complex "b85,b64,b32,b16"
-
-		# Even Fancier
   	# embed a message in a small image file, like my_avatar.png
   	go run ./cmd/lsb_encoder/ \
     	-s ~/Desktop/Pics/my_avatar.png \
