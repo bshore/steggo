@@ -5,7 +5,7 @@ Supported Formats:
 * PNG
 * JPEG - outputs as output_jpeg.png to avoid compression destroying the secret
 * BMP
-* GIF
+* GIF - Currently only supports smaller messages (~200 characters) due to GIF being a crappy format with predefined color tables.
 
 ### Install Dependencies
 Visit the [Golang](https://golang.org/dl/) downloads page and download the installer for your operating 
@@ -33,6 +33,7 @@ To run, use this command:
   - t # or --text "The Secret Message to embed"
   - m # or --msgfile /path/to/secret_message.txt (can be anything, just has to fit in srcfile)
   - i # or --stdin The secret message to embed comes from stdin (ex: pipe command)
+  - b # or --bitOpt Option for which LSBs to embed: 1 = Last Bit Only, 2 = 2-3-3/R-G-B method (default)
   - d # or --decode Extract a message from an already embedded file
   - r13 # or --rot13 Apply Rot13 pre encoding to the message before embedding
   - b16 # or --base16 Apply Base16 pre encoding to the message before embedding
@@ -54,18 +55,6 @@ To run, use this command:
     -o ~/Desktop/Pics \
 
   # Fancy
-  go run ./cmd/lsb_encoder/ \
-    -s ~/Desktop/Pics/funny_cat.gif \
-    -o ~/Desktop/Pics \
-    --complex "b16,b32,b64,b85" \
-    --msgfile ~/Downloads/lorem_ipsum_paragraph.txt
-
-  go run ./cmd/lsb_encoder/ --decode \
-    -s ~/Desktop/Pics/output.gif \
-    -o ~/Desktop/Pics \
-    --complex "b85,b64,b32,b16"
-
-  # Even Fancier
   # embed a message in a small image file, like my_avatar.png
   go run ./cmd/lsb_encoder/ \
     -s ~/Desktop/Pics/my_avatar.png \
