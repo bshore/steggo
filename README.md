@@ -24,7 +24,7 @@ Clone or download the ZIP of this repository, and place it in your go workspace.
 If on Windows CMD, use `\` instead of `/` for file paths.
 
 To run, use this command:
-`go run ./cmd/lsb_encoder/`
+`lsb_encoder <options>`
 #### Flag Options
 ```sh
   Flag Options:
@@ -45,24 +45,24 @@ To run, use this command:
 
   # Example commands
   # Simple
-  go run ./cmd/lsb_encoder/ \
+  lsb_encoder \
     --srcfile ~/Desktop/Pics/kitty_cat.jpeg \
     --outdir ~/Desktop/Pics -base64 \
     --text "Kitty Cat"
 
-  go run ./cmd/lsb_encoder/ --decode --b64 \
+  lsb_encoder --decode --b64 \
     -s ~/Desktop/Pics/output_jpeg.png \
     -o ~/Desktop/Pics \
 
   # Fancy
   # embed a message in a small image file, like my_avatar.png
-  go run ./cmd/lsb_encoder/ \
+  lsb_encoder \
     -s ~/Desktop/Pics/my_avatar.png \
     -o ~/Desktop/Pics/Output \
     --text "Shhhh, don't tell anyone this is hidden in my avatar."
   
   # embed the output from above in a wallpaper
-  go run ./cmd/lsb_encoder/ \
+  lsb_encoder \
     -s ~/Desktop/Pics/really_cool_wallpaper.jpeg \
     -o ~/Desktop/Pics/Output \
     --msgfile ~/Desktop/Pics/Output/output.png
