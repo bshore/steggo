@@ -24,7 +24,7 @@ Clone or download the ZIP of this repository, and place it in your go workspace.
 If on Windows CMD, use `\` instead of `/` for file paths.
 
 To run, use this command:
-`lsb_encoder <options>`
+`lsb_encoder <options>` or `lsb_encoder.exe <options>`
 #### Flag Options
 ```sh
   Flag Options:
