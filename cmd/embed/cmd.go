@@ -2,9 +2,9 @@ package embed
 
 import (
 	"fmt"
-	"log"
 	"lsb_encoder/pkg/embedder"
 	"lsb_encoder/pkg/encoders"
+	"lsb_encoder/pkg/utils"
 	"os"
 	"path/filepath"
 
@@ -29,7 +29,7 @@ func InitCmd() {
 	Cmd.PersistentFlags().StringVar(&targetFile, "target", "", "The path to the image file being targeted for embedding")
 	Cmd.PersistentFlags().StringVar(&destinationPath, "dest", ".", "The destination path to output the target file after embedding")
 	Cmd.PersistentFlags().StringVar(&inputStr, "input", "", "The input path or message to embed into the target file")
-	Cmd.PersistentFlags().StringArrayVar(&preEncoding, "pre-encoding", []string{}, "A list of pre-encoders to apply before embedding (r13, b16, b32, b64, b85)")
+	Cmd.PersistentFlags().StringSliceVar(&preEncoding, "pre-encoding", []string{}, "A comma separated list of pre-encoders to apply before embedding (r13, b16, b32, b64, b85), 5 maximum")
 }
 
 func embedCmdFn(command *cobra.Command, args []string) (err error) {
@@ -42,14 +42,18 @@ func embedCmdFn(command *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to open target file %s: %v", targetFile, err)
 	}
+	defer target.Close()
 
-	if !destinationExists(destinationPath) {
+	if !utils.DestinationExists(destinationPath) {
 		return fmt.Errorf("destination path (--dest) does not exist")
 	}
 
 	preEncoders, warnings := encoders.FromStrSlice(preEncoding)
 	if warnings != "" {
-		log.Println(warnings)
+		return fmt.Errorf("error determining pre-encoding: %v", warnings)
+	}
+	if len(preEncoders) > 5 {
+		return fmt.Errorf("too many pre-encoders, limit 5")
 	}
 
 	return embedder.Process(&embedder.Config{
@@ -74,16 +78,4 @@ func getInputString(str string) (out, srcType string, err error) {
 	srcType = filepath.Ext(info.Name())
 	out = string(contents)
 	return out, srcType, nil
-}
-
-// destinationExists verifies that a destination exists, if supplied
-func destinationExists(path string) bool {
-	if path == "." {
-		return true
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return info.IsDir()
 }

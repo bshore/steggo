@@ -122,19 +122,19 @@ func GetGifFrameColorPalette(img *image.Paletted, msg []byte, data []byte) []col
 	return colorPalette
 }
 
-func embedBitInColor(a byte, b uint32) uint16 {
-	// zero out last bit
-	b = b &^ 0x01
-	c := b | uint32(a)
-	return uint16(c)
-}
+// func embedBitInColor(a byte, b uint32) uint16 {
+// 	// zero out last bit
+// 	b = b &^ 0x01
+// 	c := b | uint32(a)
+// 	return uint16(c)
+// }
 
-func embedBitIn8Color(a byte, b uint8) uint8 {
-	// zero out last bit
-	b = b &^ 0x01
-	c := b | a
-	return c
-}
+// func embedBitIn8Color(a byte, b uint8) uint8 {
+// 	// zero out last bit
+// 	b = b &^ 0x01
+// 	c := b | a
+// 	return c
+// }
 
 func embedInColor(a byte, b uint8) uint8 {
 	// 128 bit set indicates to zero out last 2 bits
@@ -159,9 +159,9 @@ func embedIn16BitColor(a uint8, b uint32) uint16 {
 	return uint16(c)
 }
 
-func extractBitFromColor(r, g, b uint8) []uint8 {
-	return []uint8{r & 1, g & 1, b & 1}
-}
+// func extractBitFromColor(r, g, b uint8) []uint8 {
+// 	return []uint8{r & 1, g & 1, b & 1}
+// }
 
 func extractFromColor(r, g, b uint8) byte {
 	// Get last bits of each color to reconstruct a message byte
@@ -179,22 +179,22 @@ func extractFromColor(r, g, b uint8) byte {
 	return newByte
 }
 
-func rebuildFromBits(b []uint8) byte {
-	var newByte uint8
-	newByte = newByte | b[0]
-	newByte = newByte << 1
-	newByte = newByte | b[1]
-	newByte = newByte << 1
-	newByte = newByte | b[2]
-	newByte = newByte << 1
-	newByte = newByte | b[3]
-	newByte = newByte << 1
-	newByte = newByte | b[4]
-	newByte = newByte << 1
-	newByte = newByte | b[5]
-	newByte = newByte << 1
-	newByte = newByte | b[6]
-	newByte = newByte << 1
-	newByte = newByte | b[7]
-	return newByte
-}
+// func rebuildFromBits(b []uint8) byte {
+// 	var newByte uint8
+// 	newByte = newByte | b[0]
+// 	newByte = newByte << 1
+// 	newByte = newByte | b[1]
+// 	newByte = newByte << 1
+// 	newByte = newByte | b[2]
+// 	newByte = newByte << 1
+// 	newByte = newByte | b[3]
+// 	newByte = newByte << 1
+// 	newByte = newByte | b[4]
+// 	newByte = newByte << 1
+// 	newByte = newByte | b[5]
+// 	newByte = newByte << 1
+// 	newByte = newByte | b[6]
+// 	newByte = newByte << 1
+// 	newByte = newByte | b[7]
+// 	return newByte
+// }

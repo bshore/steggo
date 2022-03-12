@@ -12,7 +12,7 @@ package embedder
 // 	if err != nil {
 // 		return fmt.Errorf("error decoding PNG file: %v", err)
 // 	}
-// 	embedded, err := EmbedMsgInGIF(msg, loadedImage)
+// 	embedded, err := process.EmbedMsgInGIF(msg, loadedImage)
 // 	if err != nil {
 // 		return fmt.Errorf("error embedding message in file: %v", err)
 // 	}

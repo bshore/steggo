@@ -3,6 +3,7 @@ package process
 import (
 	"fmt"
 	"lsb_encoder/pkg/encoders"
+	"strconv"
 	"strings"
 )
 
@@ -13,14 +14,27 @@ type Header struct {
 	PreEncoding string
 }
 
+// Found checks if bytes has the header string termination characters !/
+func (h *Header) Found(b []byte) bool {
+	if strings.HasSuffix(string(b), "!/") {
+		headerPieces := strings.Split(strings.TrimSuffix(string(b), "!/"), ",")
+		size, _ := strconv.ParseInt(headerPieces[0], 10, 64)
+		h.Size = int(size)
+		h.SrcType = headerPieces[1]
+		h.PreEncoding = headerPieces[2]
+		return true
+	}
+	return false
+}
+
 // NewBytesHeader takes the source parameters and returns a minimal representation to identify
 //   the embedded data so we can later extract it back out
 //
 // Example:
-// - "1024,0,1/2/"
+// - "1024,0,1/2!/"
 //   - 1024 indicates that the embedded message has a length of 1024 characters
 //   - 0 indicates that the source type was a png
-//   - 1/2/ indicates that the message was pre-encoded with b16 and b32 before embed
+//   - 1/2!/ indicates that the message was pre-encoded with b16 and b32 before embed
 func NewHeaderBytes(input, srcType string, encoders []encoders.EncType) []byte {
 	header := Header{
 		Size:    len(input),
@@ -28,13 +42,13 @@ func NewHeaderBytes(input, srcType string, encoders []encoders.EncType) []byte {
 	}
 
 	if len(encoders) == 0 {
-		header.PreEncoding = "/"
+		header.PreEncoding = "!/"
 	} else {
 		var encStrs []string
 		for i := range encoders {
 			encStrs = append(encStrs, encoders[i].String())
 		}
-		header.PreEncoding = fmt.Sprintf("%s/", strings.Join(encStrs, "/"))
+		header.PreEncoding = fmt.Sprintf("%s!/", strings.Join(encStrs, "/"))
 	}
 	return []byte(fmt.Sprintf("%d,%s,%s", header.Size, header.SrcType, header.PreEncoding))
 }

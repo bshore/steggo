@@ -88,7 +88,7 @@ func EmbedMsgInImage(data []byte, file image.Image) (draw.Image, error) {
 // 		// An empty frame with the same size as the source GIF and an empty color palette
 // 		newFrame = image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), nil)
 // 		// colorPalette = CreateColorPalette(frameImg.Palette, secret.Message)
-// 		colorPalette = GetGifFrameColorPalette(frameImg, secret.Message, secret.Data) // TODO
+// 		colorPalette = GetGifFrameColorPalette(frameImg, secret.Message, secret.Data)
 // 		if doneEmbedding {
 // 			newFrame.Palette = frameImg.Palette
 // 		} else {

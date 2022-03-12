@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"lsb_encoder/cmd/embed"
+	"lsb_encoder/cmd/extract"
 
 	"github.com/spf13/cobra"
 )
@@ -20,4 +21,7 @@ func Execute(args []string) error {
 func InitRoot() {
 	embed.InitCmd()
 	rootCmd.AddCommand(embed.Cmd)
+
+	extract.InitCmd()
+	rootCmd.AddCommand(extract.Cmd)
 }

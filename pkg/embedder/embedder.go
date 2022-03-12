@@ -33,23 +33,22 @@ func Process(config *Config) error {
 	switch format {
 	case "png":
 		return ProcessPNG(data, dest, config.Target)
-		// case "jpeg":
-		// 	return ProcessJPEG(processedInput, dest, config.Target)
-		// case "bmp":
-		// 	return ProcessBMP(processedInput, dest, config.Target)
-		// case "gif":
-		// 	return ProcessGIF(processedInput, dest, config.Target)
-		// default:
-		// 	return fmt.Errorf("Unsupported source file format: %v", format)
+	case "jpeg":
+		return ProcessJPEG(data, dest, config.Target)
+	case "bmp":
+		return ProcessBMP(data, dest, config.Target)
+	// case "gif":
+	// 	return ProcessGIF(data, dest, config.Target)
+	default:
+		return fmt.Errorf("unsupported source file format: %v", format)
 	}
-	return nil
 }
 
-// formatDestination returns output.{format} except for jpeg, which then returns output_{jpeg}.png
+// formatDestination returns output.{format} except for jpeg, which returns output_jpeg.png
 //
-//   tl;dr - The reason for outputting a jpeg input as a png is due to jpeg's native compression, we
-//           don't want to output jpeg since the simple act of saving a jpeg risks destroying the
-//           embedded message.
+//  The reason for outputting a png for jpeg input is due to jpeg's native compression, we
+//  don't want to output jpeg since the simple act of saving a jpeg risks destroying the
+//  embedded message.
 func formatDestination(path, format string) string {
 	if format == "jpeg" {
 		return filepath.Join(path, fmt.Sprintf("output_%s.png", format))
