@@ -18,6 +18,8 @@ type Config struct {
 }
 
 func Process(config *Config) error {
+	var err error
+	var message string
 	_, format, err := image.Decode(config.Target)
 	if err != nil {
 		return fmt.Errorf("failed to decode target file: %v", err)
@@ -26,30 +28,36 @@ func Process(config *Config) error {
 
 	switch format {
 	case "png":
-		message, err := ProcessPNG(config.Target)
+		message, err = ProcessPNG(config.Target)
 		if err != nil {
 			return fmt.Errorf("failed to process PNG: %v", err)
 		}
-		fmt.Fprintln(os.Stdout, message)
-		if config.DestinationPath != "" {
-			os.WriteFile(filepath.Join(config.DestinationPath, "message.txt"), []byte(message), fs.FileMode(os.O_WRONLY))
-		}
 	case "bmp":
-	// case "gif":
+		message, err = ProcessBMP(config.Target)
+		if err != nil {
+			return fmt.Errorf("failed to process BMP: %v", err)
+		}
+	// case "gif": // TODO
 	// 	return ProcessGIF()
 	default:
 		return fmt.Errorf("unsupported source file format: %v", format)
+	}
+	fmt.Println(message)
+	if config.DestinationPath != "" {
+		os.WriteFile(filepath.Join(config.DestinationPath, "message.txt"), []byte(message), fs.FileMode(os.O_WRONLY))
 	}
 
 	return nil
 }
 
-func DecodeMessage(header *process.Header, extracted []byte) (msg string, err error) {
+func DecodeMessage(header *process.Header, extracted []byte) (string, error) {
+	msg := string(extracted)
+	var err error
 	if header.PreEncoding == "" {
 		return string(extracted), nil
 	}
 	encStrings := strings.Split(header.PreEncoding, "/")
-	preEncoders, warnings := encoders.FromStrSlice(encStrings)
+	preEncoders, warnings := encoders.FromIntStrSlice(encStrings)
 	if warnings != "" {
 		return "", fmt.Errorf("failed to determine pre-encoders (%v): %s", encStrings, warnings)
 	}

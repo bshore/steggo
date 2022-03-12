@@ -59,6 +59,7 @@ func EmbedMsgInImage(data []byte, file image.Image) (draw.Image, error) {
 	return newFile, nil
 }
 
+// TODO
 // EmbedMsgInGIF takes the message string and embeds it into a GIF file
 // frame by frame using Least Significant Bit(s)
 // func EmbedMsgInGIF(data []byte, file *gif.GIF) (*gif.GIF, error) {

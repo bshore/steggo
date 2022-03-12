@@ -2,6 +2,7 @@ package embedder
 
 import (
 	"fmt"
+	"image/png"
 	"io"
 	"lsb_encoder/pkg/process"
 	"os"
@@ -12,7 +13,7 @@ import (
 func ProcessBMP(data []byte, dest string, src io.Reader) error {
 	loadedImage, err := bmp.Decode(src)
 	if err != nil {
-		return fmt.Errorf("error decoding PNG file: %v", err)
+		return fmt.Errorf("error decoding BMP file: %v", err)
 	}
 	embedded, err := process.EmbedMsgInImage(data, loadedImage)
 	if err != nil {
@@ -24,7 +25,7 @@ func ProcessBMP(data []byte, dest string, src io.Reader) error {
 	}
 	defer newFile.Close()
 
-	err = bmp.Encode(newFile, embedded)
+	err = png.Encode(newFile, embedded)
 	if err != nil {
 		return fmt.Errorf("error encoding new PNG image: %v", err)
 	}

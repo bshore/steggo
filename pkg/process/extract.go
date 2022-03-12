@@ -41,6 +41,7 @@ func ExtractMsgFromImage(file image.Image) (*Header, []byte, error) {
 	return header, msgBytes, nil
 }
 
+// TODO
 // ExtractMsgFromGif takes a GIF that has had a message embedded
 // inside it and extracts the message using Least Significant Bit(s)
 // func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {

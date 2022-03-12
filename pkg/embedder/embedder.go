@@ -37,20 +37,23 @@ func Process(config *Config) error {
 		return ProcessJPEG(data, dest, config.Target)
 	case "bmp":
 		return ProcessBMP(data, dest, config.Target)
-	// case "gif":
+	// case "gif": // TODO
 	// 	return ProcessGIF(data, dest, config.Target)
 	default:
 		return fmt.Errorf("unsupported source file format: %v", format)
 	}
 }
 
-// formatDestination returns output.{format} except for jpeg, which returns output_jpeg.png
+// formatDestination returns output.{format} except for jpeg and bmp, which returns output_<format>.png
 //
-//  The reason for outputting a png for jpeg input is due to jpeg's native compression, we
+//  The reason for outputting a .png for jpeg input is due to jpeg's native compression, we
 //  don't want to output jpeg since the simple act of saving a jpeg risks destroying the
 //  embedded message.
+//
+//  The reason for outputting a .png for bmp has to do with bmp only supporting 256 colors, so to avoid
+//  embedding a message that can never be retrieved, we save the output as a .png
 func formatDestination(path, format string) string {
-	if format == "jpeg" {
+	if format != "png" {
 		return filepath.Join(path, fmt.Sprintf("output_%s.png", format))
 	}
 	return filepath.Join(path, fmt.Sprintf("output.%s", format))
