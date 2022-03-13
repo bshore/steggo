@@ -7,6 +7,7 @@ import (
 	"lsb_encoder/pkg/utils"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -59,6 +60,7 @@ func embedCmdFn(command *cobra.Command, args []string) (err error) {
 	return embedder.Process(&embedder.Config{
 		Input:           input,
 		SrcType:         srcType,
+		SrcFilename:     getBaseFilename(target.Name()),
 		Target:          target,
 		DestinationPath: destinationPath,
 		PreEncoding:     preEncoders,
@@ -78,4 +80,8 @@ func getInputString(str string) (out, srcType string, err error) {
 	srcType = filepath.Ext(info.Name())
 	out = string(contents)
 	return out, srcType, nil
+}
+
+func getBaseFilename(path string) string {
+	return strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 }

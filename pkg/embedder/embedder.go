@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Input           string
 	SrcType         string
+	SrcFilename     string
 	Target          io.ReadSeeker
 	DestinationPath string
 	PreEncoding     []encoders.EncType
@@ -26,7 +27,7 @@ func Process(config *Config) error {
 	}
 	_, _ = config.Target.Seek(0, 0)
 
-	dest := formatDestination(config.DestinationPath, format)
+	dest := formatDestination(config.SrcFilename, config.DestinationPath, format)
 	header := process.NewHeaderBytes(processedInput, config.SrcType, config.PreEncoding)
 	data := process.FinalizeMessage(header, processedInput)
 
@@ -52,9 +53,9 @@ func Process(config *Config) error {
 //
 //  The reason for outputting a .png for bmp has to do with bmp only supporting 256 colors, so to avoid
 //  embedding a message that can never be retrieved, we save the output as a .png
-func formatDestination(path, format string) string {
+func formatDestination(srcFilename, path, format string) string {
 	if format != "png" {
-		return filepath.Join(path, fmt.Sprintf("output_%s.png", format))
+		return filepath.Join(path, fmt.Sprintf("%s_%s_output.png", srcFilename, format))
 	}
-	return filepath.Join(path, fmt.Sprintf("output.%s", format))
+	return filepath.Join(path, fmt.Sprintf("%s_output.%s", srcFilename, format))
 }
