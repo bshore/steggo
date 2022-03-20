@@ -1,6 +1,6 @@
 # steggo
 
-A Least Significant Bit(s) Steganography (**LSB**) embedder/extracter. Takes a secret message and embeds it into an image file using LSB insertion.
+A Least Significant Bit(s) Steganography (**LSB**) embedder/extracter. Takes a message and embeds it into an image file using LSB insertion.
 
 Supported Input Formats:
 
@@ -10,7 +10,7 @@ Supported Input Formats:
 - BMP (outputs as `<input_name>_bmp_output.png`)
   - The `bmp` format only supports 256 colors. tl;dr - The LSB process modifies enough of these pixel colors that having a hard cap of 256 means there is no guarantee that the message can be extracted back out.
 
-### Run
+## Run
 
 Example Commands:
 
@@ -25,7 +25,15 @@ steggo extract --target path/outputs/another_output.png --dest path/extracted/
 cat path/extracted/message.txt
 ```
 
-# Least Significant Bit(s) Steganography
+## What Wikipedia has to say about [Steganography](https://en.wikipedia.org/wiki/Steganography)
+
+Steganography is the practice of concealing a message within another message or a physical object. In computing/electronic contexts, a computer file, message, image, or video is concealed within another file, message, image, or video.
+
+The advantage of steganography over cryptography alone is that the intended secret message does not attract attention to itself as an object of scrutiny. Plainly visible encrypted messages, no matter how unbreakable they are, arouse interest and may in themselves be incriminating in countries in which encryption is illegal.
+
+^ If someone shared the message `V293IHRoYXQgd2FzIGVhc3k=` on Twitter it would be fairly obvious to most people that this may be some kind of computer code, and those in tech would probably see this and know that it's actually just `base64` encoding... Whereas if someone shared a photo similar to [what's in the example](./example), the majority of people wouldn't think twice about it.
+
+## What is it?
 
 Basically, take a secret message... "Hello!" for example and convert it from ASCII to binary:
 
