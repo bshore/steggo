@@ -1,4 +1,4 @@
-project_name: five-hunerd
+project_name: steggo
 before:
   hooks:
     - go mod download
