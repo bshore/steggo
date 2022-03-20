@@ -1,6 +1,10 @@
 package encoders
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 // EncType enum for handling encoding types
 type EncType int
@@ -10,11 +14,11 @@ const (
 	R13 EncType = iota
 	// B16 short for Base16 EncType
 	B16 EncType = iota
-	// B32 short for Base16 EncType
+	// B32 short for Base32 EncType
 	B32 EncType = iota
-	// B64 short for Base16 EncType
+	// B64 short for Base64 EncType
 	B64 EncType = iota
-	// B85 short for Base16 EncType
+	// B85 short for Base85 EncType
 	B85 EncType = iota
 )
 
@@ -27,7 +31,7 @@ var encMap = map[int]string{
 }
 
 func (e EncType) String() string {
-	return encMap[int(e)]
+	return fmt.Sprintf("%d", e)
 }
 
 // EncTypeFromString takes a string and returns an EncType
@@ -38,6 +42,36 @@ func EncTypeFromString(s string) (EncType, error) {
 		}
 	}
 	return 0, fmt.Errorf("unknown encoding type: %v", s)
+}
+
+func FromIntStrSlice(intStrSlice []string) ([]EncType, string) {
+	var out []EncType
+	var errs []string
+	for i := range intStrSlice {
+		enc, err := strconv.Atoi(intStrSlice[i])
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("failed to parse encoding type %s: %v", intStrSlice[i], err))
+		}
+		out = append(out, EncType(enc))
+	}
+	return out, strings.Join(errs, "\n")
+}
+
+func FromStrSlice(encStrSlice []string) ([]EncType, string) {
+	var out []EncType
+	var errs []string
+	for i := range encStrSlice {
+		enc, err := EncTypeFromString(encStrSlice[i])
+		if err != nil {
+			errs = append(errs, err.Error())
+		} else {
+			out = append(out, enc)
+		}
+	}
+	if len(errs) == 0 {
+		return out, ""
+	}
+	return out, strings.Join(errs, "\n")
 }
 
 // ApplyPreEncoding encodes the message with each type of encoding passed through cli
