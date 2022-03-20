@@ -2,12 +2,13 @@ package embed
 
 import (
 	"fmt"
-	"lsb_encoder/pkg/embedder"
-	"lsb_encoder/pkg/encoders"
-	"lsb_encoder/pkg/utils"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bshore/steggo/pkg/embedder"
+	"github.com/bshore/steggo/pkg/encoders"
+	"github.com/bshore/steggo/pkg/utils"
 
 	"github.com/spf13/cobra"
 )

@@ -1,4 +1,4 @@
-module lsb_encoder
+module github.com/bshore/steggo
 
 go 1.17
 

@@ -3,7 +3,8 @@ package extractor
 import (
 	"fmt"
 	"io"
-	"lsb_encoder/pkg/process"
+
+	"github.com/bshore/steggo/pkg/process"
 
 	"golang.org/x/image/bmp"
 )

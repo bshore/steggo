@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"image/png"
 	"io"
-	"lsb_encoder/pkg/process"
+
+	"github.com/bshore/steggo/pkg/process"
 )
 
 func ProcessPNG(src io.Reader) (string, error) {

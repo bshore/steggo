@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
-	"lsb_encoder/cmd"
 	"os"
+
+	"github.com/bshore/steggo/cmd"
 )
 
 func main() {

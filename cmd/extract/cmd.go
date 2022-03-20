@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"lsb_encoder/pkg/extractor"
+	"github.com/bshore/steggo/pkg/extractor"
 
 	"github.com/spf13/cobra"
 )

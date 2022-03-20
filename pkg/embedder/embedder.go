@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"lsb_encoder/pkg/encoders"
-	"lsb_encoder/pkg/process"
 	"path/filepath"
+
+	"github.com/bshore/steggo/pkg/encoders"
+	"github.com/bshore/steggo/pkg/process"
 )
 
 type Config struct {

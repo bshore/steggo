@@ -2,9 +2,10 @@ package process
 
 import (
 	"fmt"
-	"lsb_encoder/pkg/encoders"
 	"strconv"
 	"strings"
+
+	"github.com/bshore/steggo/pkg/encoders"
 )
 
 // Header is a prefix to to identify information used during extraction.

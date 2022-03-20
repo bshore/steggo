@@ -5,11 +5,12 @@ import (
 	"image"
 	"io"
 	"io/fs"
-	"lsb_encoder/pkg/encoders"
-	"lsb_encoder/pkg/process"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bshore/steggo/pkg/encoders"
+	"github.com/bshore/steggo/pkg/process"
 )
 
 type Config struct {

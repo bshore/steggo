@@ -5,8 +5,9 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"lsb_encoder/pkg/process"
 	"os"
+
+	"github.com/bshore/steggo/pkg/process"
 )
 
 func ProcessJPEG(data []byte, dest string, src io.Reader) error {

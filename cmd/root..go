@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"lsb_encoder/cmd/embed"
-	"lsb_encoder/cmd/extract"
+	"github.com/bshore/steggo/cmd/embed"
+	"github.com/bshore/steggo/cmd/extract"
 
 	"github.com/spf13/cobra"
 )
