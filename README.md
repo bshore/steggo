@@ -2,13 +2,15 @@
 
 A Least Significant Bit(s) Steganography (**LSB**) embedder/extracter. Takes a message and embeds it into an image file using LSB insertion.
 
-Supported Input Formats:
+## Supported Input Formats
 
 - PNG
 - JPEG (outputs as `<input_name>_jpeg_output.png`)
   - The `jpeg` format has it's own built-in compression algorithm that will alter image pixels _on save_ and the embedded message's integrity can't be guaranteed.
 - BMP (outputs as `<input_name>_bmp_output.png`)
   - The `bmp` format only supports 256 colors. tl;dr - The LSB process modifies enough of these pixel colors that having a hard cap of 256 means there is no guarantee that the message can be extracted back out.
+
+[Check out the example/showcase](./example)
 
 ## Run
 
