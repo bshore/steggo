@@ -1,6 +1,6 @@
 # steggo
 
-A Least Significant Bit(s) Steganography (**LSB**) embedder/extracter. Takes a message and embeds it into an image file using LSB insertion.
+A Least Significant Bit(s) Steganography (**LSB**) embedder/extractor. Takes a message and embeds it into an image file using LSB insertion.
 
 ## Supported Input Formats
 
