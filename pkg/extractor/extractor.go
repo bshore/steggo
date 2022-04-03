@@ -38,8 +38,11 @@ func Process(config *Config) error {
 		if err != nil {
 			return fmt.Errorf("failed to process BMP: %v", err)
 		}
-	// case "gif": // TODO
-	// 	return ProcessGIF()
+	case "gif":
+		message, err = ProcessGif(config.Target)
+		if err != nil {
+			return fmt.Errorf("failed to process GIF: %v", err)
+		}
 	default:
 		return fmt.Errorf("unsupported source file format: %v", format)
 	}
