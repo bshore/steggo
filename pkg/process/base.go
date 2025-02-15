@@ -61,42 +61,45 @@ func WriteFile(data []byte, out, ext string) error {
 	return err
 }
 
-// GetGifFrameColorPalette gathers a Gif Frame's Color Palette
-func GetGifFrameColorPalette(img *image.Paletted, data []byte) []color.Color {
+// ModifyGifFrameColorPalette gathers a Gif Frame's Color Palette
+func ModifyGifFrameColorPalette(img *image.Paletted, data []byte) color.Palette {
 	if len(data) == 0 {
 		return img.Palette
 	}
 	var bitsIndex int
-	var newR, newG, newB uint8
-	var colorPalette []color.Color
+	// var newR, newG, newB uint16
+	var colorPalette color.Palette
 	for _, paletteColor := range img.Palette {
+		// if skipIndex != 0 && i == int(skipIndex) {
+		// 	continue
+		// }
 		r, g, b, a := paletteColor.RGBA()
+		r8 := uint8(r >> 8)
+		g8 := uint8(g >> 8)
+		b8 := uint8(b >> 8)
+		a8 := uint8(a >> 8)
 		if bitsIndex < len(data) && bitsIndex < GifMaxColor {
-			newR = embedInColor(data[bitsIndex], uint8(r))
+			r8 = embedInColor(data[bitsIndex], r8)
 			if bitsIndex+1 < len(data) {
-				newG = embedInColor(data[bitsIndex+1], uint8(g))
+				g8 = embedInColor(data[bitsIndex+1], g8)
 				if bitsIndex+2 < len(data) {
-					newB = embedInColor(data[bitsIndex+2], uint8(b))
-				} else {
-					newB = uint8(b)
+					b8 = embedInColor(data[bitsIndex+2], b8)
 				}
-			} else {
-				newG = uint8(g)
 			}
-			colorPalette = append(colorPalette, color.RGBA{R: newR, G: newG, B: newB, A: uint8(a)})
 		}
+		colorPalette = append(colorPalette, color.RGBA{R: r8, G: g8, B: b8, A: a8})
 		bitsIndex += 3
 	}
 	return colorPalette
 }
 
-func embedInColor(a byte, b uint8) uint8 {
+func embedInColor(a uint8, b uint8) uint8 {
 	// 128 bit set indicates to zero out last 2 bits
 	if a > 128 {
 		b = b &^ 0x03 // zero out last 2 bits
 		a = a & 3     // unset the 128 bit
 	} else {
-		b = b &^ 0x07 // zero out last 3 bits
+		b = b &^ 0x07 // zero out the last 3 bits
 	}
 	c := b | a
 	return c
