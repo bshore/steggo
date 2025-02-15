@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/spf13/cobra v1.3.0
-	golang.org/x/image v0.6.0
+	golang.org/x/image v0.24.0
 )
 
 require (
