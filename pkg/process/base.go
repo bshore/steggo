@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
-	"sort"
 )
 
 /*
@@ -15,11 +14,6 @@ import (
 // GifMaxColor is the maximum amount of colors that are supported by a frame's
 // Local Color Table.
 const GifMaxColor int = 256
-
-// GifMaxPerFrame is the sum of RGB pixels for which embedding can occur per frame.
-// Each color is made up of 3 bytes, Local Color Table has a max of 256 colors:
-// 3 * 256 = 768
-const GifMaxPerFrame int = 768
 
 // Flags holds the types of flags allowed by the script
 type Flags struct {
@@ -67,82 +61,45 @@ func WriteFile(data []byte, out, ext string) error {
 	return err
 }
 
-// GetGifFrameColorPalette gathers a Gif Frame's Color Palette
-func GetGifFrameColorPalette(img *image.Paletted, msg []byte, data []byte) []color.Color {
+// ModifyGifFrameColorPalette gathers a Gif Frame's Color Palette
+func ModifyGifFrameColorPalette(img *image.Paletted, data []byte) color.Palette {
+	if len(data) == 0 {
+		return img.Palette
+	}
 	var bitsIndex int
-	var newR, newG, newB uint8
-	var colorPalette []color.Color
-	paletteMap := make(map[color.Color]struct{})
-	bounds := img.Bounds()
-	// For each vertical row
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		// For each pixel in each row
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r, g, b, a := img.At(x, y).RGBA()
-			if bitsIndex < len(data) && bitsIndex < GifMaxPerFrame {
-				newR = embedInColor(data[bitsIndex], uint8(r))
-				if bitsIndex+1 < len(data) {
-					newG = embedInColor(data[bitsIndex+1], uint8(g))
-					if bitsIndex+2 < len(data) {
-						newB = embedInColor(data[bitsIndex+2], uint8(b))
-					} else {
-						newB = uint8(b)
-					}
-				} else {
-					newG = uint8(g)
-				}
-				newColor := &color.RGBA{
-					R: newR,
-					G: newG,
-					B: newB,
-					A: uint8(a),
-				}
-				if _, ok := paletteMap[newColor]; !ok {
-					paletteMap[newColor] = struct{}{}
+	// var newR, newG, newB uint16
+	var colorPalette color.Palette
+	for _, paletteColor := range img.Palette {
+		// if skipIndex != 0 && i == int(skipIndex) {
+		// 	continue
+		// }
+		r, g, b, a := paletteColor.RGBA()
+		r8 := uint8(r >> 8)
+		g8 := uint8(g >> 8)
+		b8 := uint8(b >> 8)
+		a8 := uint8(a >> 8)
+		if bitsIndex < len(data) && bitsIndex < GifMaxColor {
+			r8 = embedInColor(data[bitsIndex], r8)
+			if bitsIndex+1 < len(data) {
+				g8 = embedInColor(data[bitsIndex+1], g8)
+				if bitsIndex+2 < len(data) {
+					b8 = embedInColor(data[bitsIndex+2], b8)
 				}
 			}
-			bitsIndex += 3
 		}
+		colorPalette = append(colorPalette, color.RGBA{R: r8, G: g8, B: b8, A: a8})
+		bitsIndex += 3
 	}
-	var j int
-	for len(paletteMap) < 256 && j < len(img.Palette) {
-		if _, ok := paletteMap[img.Palette[j]]; !ok {
-			paletteMap[img.Palette[j]] = struct{}{}
-		}
-		j++
-	}
-	for c := range paletteMap {
-		colorPalette = append(colorPalette, c)
-	}
-	sort.SliceStable(colorPalette, func(i, j int) bool {
-		r1, g1, b1, _ := colorPalette[i].RGBA()
-		r2, g2, b2, _ := colorPalette[j].RGBA()
-		return (r1 + g1 + b1) < (r2 + g2 + b2)
-	})
 	return colorPalette
 }
 
-// func embedBitInColor(a byte, b uint32) uint16 {
-// 	// zero out last bit
-// 	b = b &^ 0x01
-// 	c := b | uint32(a)
-// 	return uint16(c)
-// }
-
-// func embedBitIn8Color(a byte, b uint8) uint8 {
-// 	// zero out last bit
-// 	b = b &^ 0x01
-// 	c := b | a
-// 	return c
-// }
-
-func embedInColor(a byte, b uint8) uint8 {
+func embedInColor(a uint8, b uint8) uint8 {
 	// 128 bit set indicates to zero out last 2 bits
 	if a > 128 {
 		b = b &^ 0x03 // zero out last 2 bits
 		a = a & 3     // unset the 128 bit
 	} else {
-		b = b &^ 0x07 // zero out last 3 bits
+		b = b &^ 0x07 // zero out the last 3 bits
 	}
 	c := b | a
 	return c
@@ -158,10 +115,6 @@ func embedIn16BitColor(a uint8, b uint32) uint16 {
 	c := b | uint32(a)
 	return uint16(c)
 }
-
-// func extractBitFromColor(r, g, b uint8) []uint8 {
-// 	return []uint8{r & 1, g & 1, b & 1}
-// }
 
 func extractFromColor(r, g, b uint8) byte {
 	// Get last bits of each color to reconstruct a message byte
