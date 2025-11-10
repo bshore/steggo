@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/gif"
-	"reflect"
 )
 
 // EmbedMsgInImage takes the message string and embeds it
@@ -61,161 +60,76 @@ func EmbedMsgInImage(data []byte, file image.Image) (draw.Image, error) {
 	return newFile, nil
 }
 
-// EmbedMsgInGIF takes the message string and embeds it into a GIF file
-// frame by frame using Least Significant Bit(s)
-func EmbedMsgInGIF(data []byte, file *gif.GIF, frameFactor int) (*gif.GIF, error) {
-	// early return if there's no way data will fit in GIF even at 100% color capacity
-	if len(data) > GifMaxColor*len(file.Image) {
-		return nil, fmt.Errorf("message will not fit in image")
+// EmbedMsgInGIF embeds data into a GIF using only unused palette slots
+// This ensures zero visual artifacts since unused colors are never displayed
+func EmbedMsgInGIF(data []byte, file *gif.GIF) (*gif.GIF, error) {
+	// Analyze capacity
+	capacities := AnalyzeGifCapacity(file)
+	totalCapacity := CalculateTotalGifCapacity(capacities)
+
+	// Check if message fits
+	if len(data) > totalCapacity {
+		return nil, fmt.Errorf("message won't fit: need %d data values, have %d capacity", len(data), totalCapacity)
 	}
-	// var skipIndex uint8
-	// if file.BackgroundIndex != 0 {
-	// 	skipIndex = file.BackgroundIndex
-	// }
-	// For each image frame
-	for frameNum, frameImg := range file.Image {
-		// Get the number of colors used in this frame's palette
-		size := getColorPaletteSize(frameImg) - 1
-		// if skipIndex != 0 {
-		// 	size--
-		// }
-		// chunk data so that it will fit into this frame's palette
-		var chunks [][]byte
-		for i := 0; i < len(data); i += size {
-			endAt := i + size
-			if endAt > len(data) {
-				endAt = len(data)
+
+	// fmt.Printf("GIF capacity: %d data values across %d frames (approx %d message bytes)\n", totalCapacity, len(file.Image), totalCapacity/3)
+
+	// Embed data frame by frame using unused palette slots
+	dataIndex := 0
+	for _, capacity := range capacities {
+		if dataIndex >= len(data) {
+			break // All data embedded
+		}
+
+		if len(capacity.UnusedIndices) == 0 {
+			continue // No unused slots in this frame
+		}
+
+		frame := file.Image[capacity.FrameIndex]
+		// fmt.Printf("Frame %d: %d unused palette slots\n", capacity.FrameIndex, len(capacity.UnusedIndices))
+
+		// Embed data into unused palette colors
+		// Note: data is already split into 2-3-3 format by FinalizeMessage
+		// Each unused color can hold 3 data bytes (R, G, B components)
+		for _, paletteIdx := range capacity.UnusedIndices {
+			if dataIndex >= len(data) {
+				break
 			}
-			chunks = append(chunks, data[i:endAt])
-		}
 
-		// if we've run out of chunks to process, the rest of the GIF can remain unchanged
-		// and we return early
-		if frameNum > len(chunks)-1 {
-			return file, nil
-		}
+			// Get current color
+			r, g, b, a := frame.Palette[paletteIdx].RGBA()
+			r8 := uint8(r >> 8)
+			g8 := uint8(g >> 8)
+			b8 := uint8(b >> 8)
+			a8 := uint8(a >> 8)
 
-		if frameNum%frameFactor == 0 {
-			fmt.Println("modifying frame #", frameNum)
-			// Replace the colors in the local color palette with the message data
-			newPalette := ModifyGifFrameColorPalette(frameImg, chunks[frameNum])
-			if frameNum != 0 {
-				file.Image[frameNum].Palette = newPalette
-				prevFrame := file.Image[frameNum-1]
-				newPix := mergeFrames(prevFrame, frameImg)
-				file.Image[frameNum].Pix = newPix
-				file.Image[frameNum].Rect = prevFrame.Rect
-				file.Image[frameNum].Stride = prevFrame.Stride
+			// Embed R component (2 or 3 bits depending on 128 flag)
+			if dataIndex < len(data) {
+				r8 = embedInColor(data[dataIndex], r8)
+				dataIndex++
 			}
-		}
 
+			// Embed G component (3 bits)
+			if dataIndex < len(data) {
+				g8 = embedInColor(data[dataIndex], g8)
+				dataIndex++
+			}
+
+			// Embed B component (3 bits)
+			if dataIndex < len(data) {
+				b8 = embedInColor(data[dataIndex], b8)
+				dataIndex++
+			}
+
+			// Update the palette color (safe because this index is unused)
+			frame.Palette[paletteIdx] = color.RGBA{R: r8, G: g8, B: b8, A: a8}
+		}
 	}
+
+	if dataIndex < len(data) {
+		return nil, fmt.Errorf("failed to embed all data: embedded %d of %d bytes", dataIndex, len(data))
+	}
+
+	// fmt.Printf("Successfully embedded %d bytes\n", dataIndex)
 	return file, nil
-}
-
-// getColorPaletteSize returns the maximum number of colors used in the given image frame
-func getColorPaletteSize(frame *image.Paletted) int {
-	colors := make(map[color.Color]struct{})
-	for _, c := range frame.Palette {
-		colors[c] = struct{}{}
-	}
-	return len(colors)
-}
-
-// TODO: animation is probably not working because the Pix slice on new frames is sometimes
-//			 much shorter than the previous frame's Pix slice.
-//
-//			 If we know the stride width is 454, we can plot the Pix array into a 2d slice, and
-//       using rectangle intersections only copy over the indices that overlap
-/*
-	Example:
-				(0,0)-(454,390) (36,72)-(428,352)
-				177060 109760
-				(0,0)-(454,390) (107,136)-(119,146)
-				177060 120
-*/
-
-// mergeFramePix uses the Pix array from the previous frame and current frame
-// and merges them together, changing only the Pix indices that have changed
-// from the previous frame.
-func mergeFramePix(previousFrame *image.Paletted, currentFrame *image.Paletted) []uint8 {
-	mergedPixels := make([]uint8, len(previousFrame.Pix))
-	copy(mergedPixels, previousFrame.Pix)
-
-	// for each Pix index and colorIdx pointing to the Palette from the prevous frame's Pix slice
-	for i, colorIdx := range previousFrame.Pix {
-		previousFrameColor := previousFrame.Palette[colorIdx]
-		currentFrameColor := currentFrame.Palette[colorIdx]
-		// check if the color from the palette of the previous has changed
-		if !reflect.DeepEqual(previousFrameColor, currentFrameColor) {
-			// this color has changed since the previous frame
-			for j := range currentFrame.Pix {
-				currentPaletteIdx := currentFrame.Pix[j]
-				if currentFrame.Palette[currentPaletteIdx] == currentFrameColor {
-					mergedPixels[i] = uint8(j)
-					break
-				}
-			}
-		} else {
-			mergedPixels[i] = colorIdx
-		}
-	}
-	return mergedPixels
-}
-
-func mergeFrames(prevFrame *image.Paletted, curFrame *image.Paletted) []uint8 {
-	// Get the dimensions of the overlapping region between the two frames
-	bounds := prevFrame.Bounds().Intersect(curFrame.Bounds())
-
-	// Calculate the total number of pixels in the previous frame
-	widthPrev, heightPrev := prevFrame.Bounds().Dx(), prevFrame.Bounds().Dy()
-	numPixelsPrev := widthPrev * heightPrev
-
-	// Create a new slice to store the merged pixels
-	mergedPixels := make([]uint8, numPixelsPrev)
-
-	// Copy the pixels from the previous frame to the merged pixels slice
-	copy(mergedPixels, prevFrame.Pix)
-
-	// Iterate over the overlapping region of the two frames
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			// Get the color index for the current pixel in each frame
-			prevIndex := prevFrame.ColorIndexAt(x, y)
-			curIndex := curFrame.ColorIndexAt(x, y)
-
-			// If the color index has changed between frames, update the corresponding pixel in the merged pixels slice
-			if prevIndex != curIndex {
-				mergedPixels[(y-prevFrame.Rect.Min.Y)*widthPrev+(x-prevFrame.Rect.Min.X)] = curIndex
-			}
-		}
-	}
-
-	return mergedPixels
-}
-
-func mergeFrames2(previousFrame *image.Paletted, currentFrame *image.Paletted) []uint8 {
-	// Find the intersecting rectangle of the two frames
-	overlap := previousFrame.Bounds().Intersect(currentFrame.Bounds())
-
-	// Create a 2D slice representing all the pixels of the previous frame
-	pixels := make([][]uint8, previousFrame.Bounds().Dy())
-	for y := range pixels {
-		pixels[y] = previousFrame.Pix[y*previousFrame.Stride : (y+1)*previousFrame.Stride]
-	}
-
-	// Replace the indices of the 2D slice with the pixels from the current frame where the overlap is
-	for y := overlap.Min.Y; y < overlap.Max.Y; y++ {
-		for x := overlap.Min.X; x < overlap.Max.X; x++ {
-			pixels[y][x] = currentFrame.Pix[currentFrame.PixOffset(x, y)]
-		}
-	}
-
-	// Flatten the 2D slice into a 1D slice
-	flattened := make([]uint8, 0, len(previousFrame.Pix))
-	for _, row := range pixels {
-		flattened = append(flattened, row...)
-	}
-
-	return flattened
 }

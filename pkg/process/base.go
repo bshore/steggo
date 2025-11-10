@@ -3,6 +3,7 @@ package process
 import (
 	"image"
 	"image/color"
+	"image/gif"
 	"os"
 	"path/filepath"
 )
@@ -14,6 +15,15 @@ import (
 // GifMaxColor is the maximum amount of colors that are supported by a frame's
 // Local Color Table.
 const GifMaxColor int = 256
+
+// GifFrameCapacity holds information about embedding capacity for a single frame
+type GifFrameCapacity struct {
+	FrameIndex       int
+	UnusedIndices    []int
+	DisposalMethod   byte
+	CanModifyPalette bool
+	Capacity         int // in bits (each color can hold 2+3+3=8 bits)
+}
 
 // Flags holds the types of flags allowed by the script
 type Flags struct {
@@ -61,18 +71,14 @@ func WriteFile(data []byte, out, ext string) error {
 	return err
 }
 
-// ModifyGifFrameColorPalette gathers a Gif Frame's Color Palette
+// ModifyGifFrameColorPalette modifies a GIF frame's color palette with embedded data
 func ModifyGifFrameColorPalette(img *image.Paletted, data []byte) color.Palette {
 	if len(data) == 0 {
 		return img.Palette
 	}
 	var bitsIndex int
-	// var newR, newG, newB uint16
 	var colorPalette color.Palette
 	for _, paletteColor := range img.Palette {
-		// if skipIndex != 0 && i == int(skipIndex) {
-		// 	continue
-		// }
 		r, g, b, a := paletteColor.RGBA()
 		r8 := uint8(r >> 8)
 		g8 := uint8(g >> 8)
@@ -91,6 +97,75 @@ func ModifyGifFrameColorPalette(img *image.Paletted, data []byte) color.Palette 
 		bitsIndex += 3
 	}
 	return colorPalette
+}
+
+// findUnusedPaletteIndices returns palette indices that are never referenced by Pix
+func findUnusedPaletteIndices(frame *image.Paletted) []int {
+	if len(frame.Palette) == 0 {
+		return nil
+	}
+
+	// Track which palette indices are actually used
+	usedIndices := make(map[uint8]bool)
+	for _, pixIndex := range frame.Pix {
+		usedIndices[pixIndex] = true
+	}
+
+	// Find unused indices
+	var unused []int
+	for i := 0; i < len(frame.Palette); i++ {
+		if !usedIndices[uint8(i)] {
+			unused = append(unused, i)
+		}
+	}
+
+	return unused
+}
+
+// AnalyzeGifCapacity analyzes a GIF and returns capacity information per frame
+func AnalyzeGifCapacity(g *gif.GIF) []GifFrameCapacity {
+	capacities := make([]GifFrameCapacity, len(g.Image))
+
+	for i, frame := range g.Image {
+		unusedIndices := findUnusedPaletteIndices(frame)
+
+		// Get disposal method for this frame
+		var disposal byte
+		if i < len(g.Disposal) {
+			disposal = g.Disposal[i]
+		}
+
+		// Determine if we can safely modify the palette
+		// - Always safe for unused palette indices
+		// - For disposal method 2 (restore to background) or 3 (restore to previous),
+		//   we might be able to modify more colors since the frame gets cleared
+		canModifyPalette := len(unusedIndices) > 0
+
+		// Each unused color can hold 3 data values (R, G, B components)
+		// After FinalizeMessage splits bytes into 2-3-3 format, each original byte becomes 3 values
+		// So capacity in data values = unusedIndices * 3
+		capacity := len(unusedIndices) * 3
+
+		capacities[i] = GifFrameCapacity{
+			FrameIndex:       i,
+			UnusedIndices:    unusedIndices,
+			DisposalMethod:   disposal,
+			CanModifyPalette: canModifyPalette,
+			Capacity:         capacity,
+		}
+	}
+
+	return capacities
+}
+
+// CalculateTotalGifCapacity returns total embedding capacity in data values
+// (the capacity is for the data array after FinalizeMessage, not original message bytes)
+func CalculateTotalGifCapacity(capacities []GifFrameCapacity) int {
+	totalCapacity := 0
+	for _, cap := range capacities {
+		totalCapacity += cap.Capacity
+	}
+	return totalCapacity // Return capacity in data values
 }
 
 func embedInColor(a uint8, b uint8) uint8 {
