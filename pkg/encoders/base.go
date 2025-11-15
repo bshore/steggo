@@ -1,0 +1,104 @@
+package encoders
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+// EncType enum for handling encoding types
+type EncType int
+
+const (
+	// R13 short for Rot13 EncType
+	R13 EncType = iota
+	// B16 short for Base16 EncType
+	B16 EncType = iota
+	// B32 short for Base32 EncType
+	B32 EncType = iota
+	// B64 short for Base64 EncType
+	B64 EncType = iota
+	// B85 short for Base85 EncType
+	B85 EncType = iota
+	// GZIP compression
+	GZIP EncType = iota
+)
+
+var encMap = map[int]string{
+	0: "r13",
+	1: "b16",
+	2: "b32",
+	3: "b64",
+	4: "b85",
+	5: "gzip",
+}
+
+func (e EncType) String() string {
+	return fmt.Sprintf("%d", e)
+}
+
+// EncTypeFromString takes a string and returns an EncType
+func EncTypeFromString(s string) (EncType, error) {
+	for e, str := range encMap {
+		if s == str {
+			return EncType(e), nil
+		}
+	}
+	return 0, fmt.Errorf("unknown encoding type: %v", s)
+}
+
+func FromIntStrSlice(intStrSlice []string) ([]EncType, string) {
+	var out []EncType
+	var errs []string
+	for i := range intStrSlice {
+		enc, err := strconv.Atoi(intStrSlice[i])
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("failed to parse encoding type %s: %v", intStrSlice[i], err))
+		}
+		out = append(out, EncType(enc))
+	}
+	return out, strings.Join(errs, "\n")
+}
+
+func FromStrSlice(encStrSlice []string) ([]EncType, string) {
+	var out []EncType
+	var errs []string
+	for i := range encStrSlice {
+		enc, err := EncTypeFromString(encStrSlice[i])
+		if err != nil {
+			errs = append(errs, err.Error())
+		} else {
+			out = append(out, enc)
+		}
+	}
+	if len(errs) == 0 {
+		return out, ""
+	}
+	return out, strings.Join(errs, "\n")
+}
+
+// ApplyPreEncoding encodes the message with each type of encoding passed through cli
+func ApplyPreEncoding(msg string, encs []EncType) ([]byte, error) {
+	for _, enc := range encs {
+		switch enc {
+		case R13:
+			msg = Rot13(msg)
+		case B16:
+			msg = Encode16(msg)
+		case B32:
+			msg = Encode32(msg)
+		case B64:
+			msg = Encode64(msg)
+		case B85:
+			msg = Encode85(msg)
+		case GZIP:
+			var err error
+			compMsg, err := Gzip([]byte(msg))
+			if err != nil {
+				return nil, err
+			}
+			msg = string(compMsg)
+		}
+	}
+	return []byte(msg), nil
+}
