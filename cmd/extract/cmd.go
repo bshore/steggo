@@ -11,8 +11,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "extract",
-	Short: "",
-	Long:  "",
+	Short: "Extracts a message from --target {file} outputting to --dest {path}",
 	RunE:  extractCmdFn,
 }
 
@@ -22,8 +21,8 @@ var (
 )
 
 func InitCmd() {
-	Cmd.PersistentFlags().StringVar(&targetFile, "target", "", "The path to the image file being targeted for extraction")
-	Cmd.PersistentFlags().StringVar(&destinationPath, "dest", "", "The destination path to output the extracted message (message.txt)")
+	Cmd.PersistentFlags().StringVarP(&targetFile, "target", "t", "", "The path to the image file being targeted for extraction")
+	Cmd.PersistentFlags().StringVarP(&destinationPath, "dest", "d", "", "The destination path to output the extracted message (message.txt)")
 }
 
 func extractCmdFn(command *cobra.Command, args []string) (err error) {

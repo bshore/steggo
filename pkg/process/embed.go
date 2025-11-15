@@ -77,10 +77,6 @@ func EmbedMsgInGIF(data []byte, file *gif.GIF) (*gif.GIF, error) {
 			}
 		}
 	}
-	// TODO:
-	// Maybe need to add like a --gif-force option that will duplicate frames and scale the delay to fit the message?
-	//
-	//
 	totalCapacity := (len(file.Image) * 256 * 3) - nonEmbedableColors
 	if len(data) > totalCapacity {
 		return nil, fmt.Errorf("message won't fit: need %d data values, have %d capacity", len(data), totalCapacity)
