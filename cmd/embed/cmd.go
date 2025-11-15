@@ -25,13 +25,19 @@ var (
 	destinationPath string
 	inputStr        string
 	preEncoding     []string
+
+	preEncodingHelp = `A comma separated list of pre-encoders to apply before embedding, 5 max: r13, b16, b32, b64, b85, gzip.
+Each encoder is applied in the order they are specified.
+
+NOTE: The gzip option compresses the message and may not be used with other encoders.
+`
 )
 
 func InitCmd() {
 	Cmd.PersistentFlags().StringVar(&targetFile, "target", "", "The path to the image file being targeted for embedding")
 	Cmd.PersistentFlags().StringVar(&destinationPath, "dest", ".", "The destination path to output the target file after embedding")
 	Cmd.PersistentFlags().StringVar(&inputStr, "input", "", "The input path or message to embed into the target file")
-	Cmd.PersistentFlags().StringSliceVar(&preEncoding, "pre-encoding", []string{}, "A comma separated list of pre-encoders to apply before embedding (r13, b16, b32, b64, b85), 5 maximum")
+	Cmd.PersistentFlags().StringSliceVar(&preEncoding, "pre-encoding", []string{}, preEncodingHelp)
 }
 
 func embedCmdFn(command *cobra.Command, args []string) (err error) {

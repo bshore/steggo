@@ -29,34 +29,31 @@ func (h *Header) Found(b []byte) bool {
 }
 
 // NewBytesHeader takes the source parameters and returns a minimal representation to identify
-//   the embedded data so we can later extract it back out
+// the embedded data so we can later extract it back out
 //
 // Example:
 // - "1024,0,1/2!/"
 //   - 1024 indicates that the embedded message has a length of 1024 characters
 //   - 0 indicates that the source type was a png
 //   - 1/2!/ indicates that the message was pre-encoded with b16 and b32 before embed
-func NewHeaderBytes(input, srcType string, encoders []encoders.EncType) []byte {
-	header := Header{
-		Size:    len(input),
-		SrcType: srcType,
-	}
-
+func NewHeaderBytes(input []byte, srcType string, encoders []encoders.EncType) []byte {
+	// Build pre-encoding string
+	var preEncodingStr string
 	if len(encoders) == 0 {
-		header.PreEncoding = "!/"
+		preEncodingStr = "!/"
 	} else {
 		var encStrs []string
 		for i := range encoders {
 			encStrs = append(encStrs, encoders[i].String())
 		}
-		header.PreEncoding = fmt.Sprintf("%s!/", strings.Join(encStrs, "/"))
+		preEncodingStr = fmt.Sprintf("%s!/", strings.Join(encStrs, "/"))
 	}
-	return []byte(fmt.Sprintf("%d,%s,%s", header.Size, header.SrcType, header.PreEncoding))
+	return fmt.Appendf([]byte{}, "%d,%s,%s", len(input), srcType, preEncodingStr)
 }
 
 // FinalizeMessage transforms the header and message into it's final form for R,G,B least significant bit insertion
-func FinalizeMessage(header []byte, msg string) []byte {
-	msgBytes := []byte(string(header) + msg)
+func FinalizeMessage(header, msg []byte) []byte {
+	msgBytes := append(header, msg...)
 	var bitArr []byte
 	for _, b := range msgBytes {
 		// Get bit values in a group of 2-3-3 (R-G-B)

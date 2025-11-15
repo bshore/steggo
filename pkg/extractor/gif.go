@@ -13,7 +13,8 @@ func ProcessGif(src io.Reader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error decoding GIF file: %v", err)
 	}
-	header, extracted, err := process.ExtractMsgFromGif(loadedImage)
+
+	header, extracted, err := process.ExtractMsgFromGIF(loadedImage)
 	if err != nil {
 		return "", fmt.Errorf("error extracting from GIF image: %v", err)
 	}
