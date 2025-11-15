@@ -7,10 +7,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const steggoLongHelpText = `
+Try subcommands:
+
+steggo embed --help
+steggo extract --help
+`
+
 var rootCmd = &cobra.Command{
 	Use:   "steggo",
 	Short: "The base command of the LSB Steganography encode/decode CLI",
-	Long:  "TODO",
+	Long:  steggoLongHelpText,
 }
 
 func Execute(args []string) error {

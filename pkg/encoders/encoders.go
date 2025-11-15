@@ -2,10 +2,13 @@ package encoders
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/ascii85"
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
+	"io"
 	"strings"
 )
 
@@ -112,4 +115,42 @@ func Decode85(src string) (string, error) {
 	// remove /x00 null bytes before returning
 	decoded = bytes.Trim(decoded, "\x00")
 	return string(decoded), nil
+}
+
+// ==============================
+// Gzip Compress/Decompress funcs
+// ==============================
+
+// Gzip takes in a message string and Gzip compresses it, and then Base64 encodes it
+// for embedding
+func Gzip(msg []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	writer, err := gzip.NewWriterLevel(&buf, gzip.BestCompression)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gzip writer: %v", err)
+	}
+	_, err = writer.Write(msg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write to gzip writer: %v", err)
+	}
+	err = writer.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to close gzip writer: %v", err)
+	}
+	out := Encode64(buf.String())
+	return []byte(out), nil
+}
+
+// Gunzip takes in a Gzip compressed byte slice, Base64 decodes it and decompresses it
+func Gunzip(data []byte) ([]byte, error) {
+	bs, err := Decode64(string(data))
+	if err != nil {
+		return nil, err
+	}
+	reader, err := gzip.NewReader(strings.NewReader(bs))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gzip reader: %v", err)
+	}
+	defer reader.Close()
+	return io.ReadAll(reader)
 }

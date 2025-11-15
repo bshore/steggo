@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,15 +37,18 @@ func Process(config *Config) error {
 		if err != nil {
 			return fmt.Errorf("failed to process BMP: %v", err)
 		}
-	// case "gif": // TODO
-	// 	return ProcessGIF()
+	case "gif":
+		message, err = ProcessGif(config.Target)
+		if err != nil {
+			return fmt.Errorf("failed to process GIF: %v", err)
+		}
 	default:
 		return fmt.Errorf("unsupported source file format: %v", format)
 	}
-	fmt.Println(message)
 	if config.DestinationPath != "" {
-		os.WriteFile(filepath.Join(config.DestinationPath, "message.txt"), []byte(message), fs.FileMode(os.O_WRONLY))
+		return os.WriteFile(filepath.Join(config.DestinationPath, "message.txt"), []byte(message), 0644)
 	}
+	fmt.Fprintln(os.Stdout, message)
 
 	return nil
 }
@@ -54,9 +56,11 @@ func Process(config *Config) error {
 func DecodeMessage(header *process.Header, extracted []byte) (string, error) {
 	msg := string(extracted)
 	var err error
+
 	if header.PreEncoding == "" {
-		return string(extracted), nil
+		return msg, nil
 	}
+
 	encStrings := strings.Split(header.PreEncoding, "/")
 	preEncoders, warnings := encoders.FromIntStrSlice(encStrings)
 	if warnings != "" {
@@ -86,6 +90,12 @@ func DecodeMessage(header *process.Header, extracted []byte) (string, error) {
 			if err != nil {
 				return "", fmt.Errorf("failed to decode b85 message: %v", err)
 			}
+		case encoders.GZIP:
+			dMsg, err := encoders.Gunzip(extracted)
+			if err != nil {
+				return "", fmt.Errorf("failed to decompress message: %v", err)
+			}
+			msg = string(dMsg)
 		default:
 			return "", fmt.Errorf("attempted to decode unkown pre-encoding type: %d", enc)
 		}

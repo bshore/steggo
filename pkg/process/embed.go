@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"image/gif"
 )
 
 // EmbedMsgInImage takes the message string and embeds it
@@ -59,99 +60,73 @@ func EmbedMsgInImage(data []byte, file image.Image) (draw.Image, error) {
 	return newFile, nil
 }
 
-// TODO
-// EmbedMsgInGIF takes the message string and embeds it into a GIF file
-// frame by frame using Least Significant Bit(s)
-// func EmbedMsgInGIF(data []byte, file *gif.GIF) (*gif.GIF, error) {
-// 	var bitsIndex int
-// 	var doneEmbedding bool
-// 	var newR, newG, newB uint8
-// 	var newFrame *image.Paletted
-// 	var colorPalette []color.Color
-// 	// // Color table only allows for 256 color combinations, multiply by number of frames for available pixels.
-// 	// pixels := 256 * len(file.Image)
-// 	// // If the secret's size is not under the amount of available pixels, we can't embed.
-// 	// if !(secret.Size/3 < pixels) {
-// 	// 	return nil, fmt.Errorf("Secret message won't fit in image: %v LSB's to embed, %v pixels available", secret.Size/3, pixels)
-// 	// }
-// 	newGif := &gif.GIF{
-// 		Image:           []*image.Paletted{},
-// 		Delay:           file.Delay,
-// 		LoopCount:       file.LoopCount,
-// 		Disposal:        file.Disposal,
-// 		Config:          file.Config,
-// 		BackgroundIndex: file.BackgroundIndex,
-// 	}
-// 	// For each image frame
-// 	for frameNum, frameImg := range file.Image {
-// 		// The image rectangle bounds
-// 		bounds := frameImg.Bounds()
-// 		// An empty frame with the same size as the source GIF and an empty color palette
-// 		newFrame = image.NewPaletted(image.Rect(0, 0, bounds.Dx(), bounds.Dy()), nil)
-// 		// colorPalette = CreateColorPalette(frameImg.Palette, secret.Message)
-// 		colorPalette = GetGifFrameColorPalette(frameImg, secret.Message, secret.Data)
-// 		if doneEmbedding {
-// 			newFrame.Palette = frameImg.Palette
-// 		} else {
-// 			newFrame.Palette = colorPalette
-// 		}
-// 		// For each vertical row
-// 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-// 			// For each pixel in each row
-// 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
-// 				r, g, b, a := frameImg.At(x, y).RGBA()
-// 				// if bitsIndex >= GifMaxPerFrame*(frameNum+1) {
-// 				// 	newFrame.Set(x, y, frameImg.At(x, y))
-// 				// 	continue
-// 				// }
-// 				// If the iteration is still under the length of message bits
-// 				if bitsIndex < len(data) {
-// 					newR = embedInColor(data[bitsIndex], uint8(r))
-// 					// Check if there is a next bit pair to embed
-// 					if bitsIndex+1 < len(data) {
-// 						newG = embedInColor(data[bitsIndex+1], uint8(g))
-// 						// Check if there is a next bit pair to embed
-// 						if bitsIndex+2 < len(data) {
-// 							newB = embedInColor(data[bitsIndex+2], uint8(b))
-// 						} else {
-// 							newB = uint8(b)
-// 						}
-// 					} else {
-// 						// No more message bits to embed, copy color value
-// 						newG = uint8(g)
-// 					}
-// 					newColor := color.RGBA{
-// 						R: newR,
-// 						G: newG,
-// 						B: newB,
-// 						A: uint8(a),
-// 					}
-// 					newFrame.Set(x, y, newColor)
-// 					bitsIndex += 3
-// 				} else {
-// 					// No more message bits to embed, just copy the remaining pixels for frame
-// 					newColor := color.RGBA{
-// 						R: uint8(r),
-// 						G: uint8(g),
-// 						B: uint8(b),
-// 						A: uint8(a),
-// 					}
-// 					newFrame.Set(x, y, newColor)
-// 					doneEmbedding = true
-// 				}
-// 			} // End x
-// 		} // End y
-// 		// If bitsIndex greater than GifMaxPerFrame * current frame, +1 for next frame
-// 		if bitsIndex == GifMaxPerFrame*(frameNum+1) {
-// 			bitsIndex++
-// 		}
-// 		// Append the current frame since
-// 		newGif.Image = append(newGif.Image, newFrame)
-// 		if doneEmbedding {
-// 			// Append the next frame and every frame after it and return
-// 			newGif.Image = append(newGif.Image, file.Image[frameNum+1:]...)
-// 			return newGif, nil
-// 		}
-// 	}
-// 	return newGif, nil
-// }
+// EmbedMsgInGIF takes the message data and embeds it into the GIF file's
+// Local Color Palette.
+func EmbedMsgInGIF(data []byte, file *gif.GIF) (*gif.GIF, error) {
+	// Find all non-embedable colors in the the whole GIF
+	var nonEmbedableColors int
+	for frameIdx := range file.Image {
+		for paletteIdx := 0; paletteIdx < len(file.Image[frameIdx].Palette); paletteIdx++ {
+			r, g, b, _ := file.Image[frameIdx].Palette[paletteIdx].RGBA()
+			r8 := uint8(r >> 8)
+			g8 := uint8(g >> 8)
+			b8 := uint8(b >> 8)
+			extractedByte := extractFromColor(r8, g8, b8)
+			if extractedByte == 0x00 {
+				nonEmbedableColors++
+			}
+		}
+	}
+	totalCapacity := (len(file.Image) * 256 * 3) - nonEmbedableColors
+	if len(data) > totalCapacity {
+		return nil, fmt.Errorf("message won't fit: need %d data values, have %d capacity", len(data), totalCapacity)
+	}
+
+	bitsIndex := 0
+	for frameIdx := range file.Image {
+		if bitsIndex >= len(data) {
+			break
+		}
+
+		for paletteIdx := 0; paletteIdx < len(file.Image[frameIdx].Palette); paletteIdx++ {
+			if bitsIndex >= len(data) {
+				break
+			}
+
+			r, g, b, a := file.Image[frameIdx].Palette[paletteIdx].RGBA()
+
+			r8 := uint8(r >> 8)
+			g8 := uint8(g >> 8)
+			b8 := uint8(b >> 8)
+			a8 := uint8(a >> 8)
+
+			extractedByte := extractFromColor(r8, g8, b8)
+			if extractedByte == 0x00 {
+				// Always skip bytes that produce a zero byte,
+				// standard library GIF encoder optimizes by LSB
+				// and will destroy any LSB modificaiton we make,
+				// setting them back to 0x00
+				continue
+			}
+
+			if bitsIndex < len(data) {
+				r8 = embedInColor(data[bitsIndex], r8)
+				if bitsIndex+1 < len(data) {
+					g8 = embedInColor(data[bitsIndex+1], g8)
+					if bitsIndex+2 < len(data) {
+						b8 = embedInColor(data[bitsIndex+2], b8)
+					}
+				}
+			}
+
+			file.Image[frameIdx].Palette[paletteIdx] = color.RGBA{R: r8, G: g8, B: b8, A: a8}
+			bitsIndex += 3
+		}
+	}
+
+	if bitsIndex < len(data) {
+		return nil, fmt.Errorf("failed to embed all data: embedded %d of %d bytes", bitsIndex, len(data))
+	}
+
+	return file, nil
+}

@@ -3,6 +3,7 @@ package process
 import (
 	"fmt"
 	"image"
+	"image/gif"
 )
 
 // ExtractMsgFromImage takes an Image that has had a message embedded
@@ -41,67 +42,48 @@ func ExtractMsgFromImage(file image.Image) (*Header, []byte, error) {
 	return header, msgBytes, nil
 }
 
-// TODO
-// ExtractMsgFromGif takes a GIF that has had a message embedded
-// inside it and extracts the message using Least Significant Bit(s)
-// func ExtractMsgFromGif(secret *Secret, file *gif.GIF) (*Secret, error) {
-// 	var err error
-// 	var size int
-// 	var headBits, msgBits []uint8
-// 	var headBytes, headBitBytes, msgBytes, msgBitBytes []byte
-// 	var headerFound bool
-// 	var header Header
-// 	// For each image frame
-// 	for _, img := range file.Image {
-// 		bounds := img.Bounds()
-// 		// For each vertical row
-// 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-// 			// vor each pixel in each row
-// 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
-// 				r, g, b, _ := img.At(x, y).RGBA()
-// 				if headerFound {
-// 					if header.BitOpt == 2 {
-// 						if len(msgBytes) < size {
-// 							msgbyte := extractFromColor(uint8(r), uint8(g), uint8(b))
-// 							msgBytes = append(msgBytes, msgbyte)
-// 						}
-// 					} else {
-// 						if len(msgBytes) < size {
-// 							newBits := extractBitFromColor(uint8(r), uint8(g), uint8(b))
-// 							msgBits := append(msgBits, newBits...)
-// 							if len(msgBitBytes) >= 8 {
-// 								newByte := rebuildFromBits(msgBits[:8])
-// 								msgBytes = append(msgBytes, newByte)
-// 								msgBits = msgBits[8:]
-// 							}
-// 						}
-// 					}
-// 					continue
-// 				} else {
-// 					// Build up headBytes & headBits until it can be Unmarshaled
-// 					headByte := extractFromColor(uint8(r), uint8(g), uint8(b))
-// 					headBytes = append(headBytes, headByte)
-// 					err = json.Unmarshal(headBytes, &header)
-// 					if err == nil {
-// 						headerFound = true
-// 						size = header.Size
-// 					}
-// 					newBits := extractBitFromColor(uint8(r), uint8(g), uint8(b))
-// 					headBits = append(headBits, newBits...)
-// 					if len(headBits) >= 8 {
-// 						newByte := rebuildFromBits(headBits[:8])
-// 						headBitBytes = append(headBitBytes, newByte)
-// 						err = json.Unmarshal(headBitBytes, &header)
-// 						if err == nil {
-// 							headerFound = true
-// 						}
-// 						headBits = headBits[8:]
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	secret.DataHeader = header
-// 	secret.Message = msgBytes
-// 	return secret, nil
-// }
+func ExtractMsgFromGIF(file *gif.GIF) (*Header, []byte, error) {
+	var headBytes, msgBytes []byte
+	var headerFound bool
+	var header = &Header{}
+
+	for frameIdx := range file.Image {
+		for paletteIdx := 0; paletteIdx < len(file.Image[frameIdx].Palette); paletteIdx++ {
+			r, g, b, _ := file.Image[frameIdx].Palette[paletteIdx].RGBA()
+			r8 := uint8(r >> 8)
+			g8 := uint8(g >> 8)
+			b8 := uint8(b >> 8)
+
+			extractedByte := extractFromColor(r8, g8, b8)
+			if extractedByte == 0x00 {
+				// Always skip zero bytes.
+				// Embedder does not embed in zero bytes
+				// because it leads to message corruption.
+				continue
+			}
+
+			if headerFound {
+				if len(msgBytes) < header.Size {
+					msgBytes = append(msgBytes, extractedByte)
+				} else {
+					return header, msgBytes, nil
+				}
+			} else {
+				headBytes = append(headBytes, extractedByte)
+				if header.Found(headBytes) {
+					headerFound = true
+				}
+			}
+		}
+	}
+
+	if !headerFound {
+		return nil, nil, fmt.Errorf("failed to extract message, header not found: %s", string(headBytes[:20]))
+	}
+
+	if len(msgBytes) < header.Size {
+		return nil, nil, fmt.Errorf("failed to extract complete message: got %d bytes, expected %d", len(msgBytes), header.Size)
+	}
+
+	return header, msgBytes, nil
+}

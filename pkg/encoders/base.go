@@ -20,6 +20,8 @@ const (
 	B64 EncType = iota
 	// B85 short for Base85 EncType
 	B85 EncType = iota
+	// GZIP compression
+	GZIP EncType = iota
 )
 
 var encMap = map[int]string{
@@ -28,6 +30,7 @@ var encMap = map[int]string{
 	2: "b32",
 	3: "b64",
 	4: "b85",
+	5: "gzip",
 }
 
 func (e EncType) String() string {
@@ -75,19 +78,27 @@ func FromStrSlice(encStrSlice []string) ([]EncType, string) {
 }
 
 // ApplyPreEncoding encodes the message with each type of encoding passed through cli
-func ApplyPreEncoding(msg string, encs []EncType) string {
+func ApplyPreEncoding(msg string, encs []EncType) ([]byte, error) {
 	for _, enc := range encs {
-		if enc == R13 {
+		switch enc {
+		case R13:
 			msg = Rot13(msg)
-		} else if enc == B16 {
+		case B16:
 			msg = Encode16(msg)
-		} else if enc == B32 {
+		case B32:
 			msg = Encode32(msg)
-		} else if enc == B64 {
+		case B64:
 			msg = Encode64(msg)
-		} else if enc == B85 {
+		case B85:
 			msg = Encode85(msg)
+		case GZIP:
+			var err error
+			compMsg, err := Gzip([]byte(msg))
+			if err != nil {
+				return nil, err
+			}
+			msg = string(compMsg)
 		}
 	}
-	return msg
+	return []byte(msg), nil
 }
