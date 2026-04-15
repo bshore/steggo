@@ -1,10 +1,10 @@
 module github.com/bshore/steggo
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/spf13/cobra v1.10.1
-	golang.org/x/image v0.32.0
+	golang.org/x/image v0.38.0
 )
 
 require (
